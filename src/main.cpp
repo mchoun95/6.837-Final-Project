@@ -29,8 +29,8 @@ namespace
 //                                 "left hip", "left leg", "left knee", "left foot",
 //                                 "right collarbone", "right shoulder", "right elbow", "left collarbone", "left shoulder", "left elbow" };
 
-const int NJOINTS = 5;
-const string jointNames[NJOINTS] = { "root","hip","knee","ankle","foot" };
+const int njoints = 5;
+const string jointnames[njoints] = { "root","hip","knee","ankle","foot" };
 
 // Global variables here.
 GLFWwindow* window;
