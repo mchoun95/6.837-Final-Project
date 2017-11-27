@@ -22,7 +22,7 @@ namespace ng = ::nanogui;
 
 namespace
 {
-// Constants 
+// Constants
 //const int njoints = 18;
 //const string jointnames[njoints] = { "root", "chest", "waist", "neck",
 //                                 "right hip", "right leg", "right knee", "right foot",
@@ -35,7 +35,7 @@ const string jointnames[njoints] = { "root","hip","knee","ankle","foot" };
 // Global variables here.
 GLFWwindow* window;
 ng::Screen *screen;
-Vector3f g_jointangles[NJOINTS];
+Vector3f g_jointangles[njoints];
 
 // This assignment uses a useful camera implementation
 Camera camera;
@@ -216,7 +216,7 @@ void initGUI(GLFWwindow* glfwwin) {
 
     ng::Window* window = nullptr;
     ng::Widget* animator = nullptr;
-    for (int i = 0; i < NJOINTS; ++i) {
+    for (int i = 0; i < njoints; ++i) {
         if (i == 0 || i == 8) {
             window = new ng::Window(screen, i == 0 ? "Animator 1" : "Animator 2");
             window->setPosition(ng::Vector2i(i == 0 ? 10 : 800, 10));
@@ -241,7 +241,7 @@ void initGUI(GLFWwindow* glfwwin) {
         ng::Widget *jointpanel = new ng::Widget(animator);
         jointpanel->setLayout(new ng::BoxLayout(ng::Orientation::Vertical, ng::Alignment::Minimum, 2, 0));
 
-        ng::Label* label = new ng::Label(jointpanel, jointNames[i]);
+        ng::Label* label = new ng::Label(jointpanel, jointnames[i]);
         label->setFontSize(FONTSZ);
 
         for (int dim = 0; dim < 3; ++dim) {
