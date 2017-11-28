@@ -148,7 +148,10 @@ void drawAxis()
     const Vector3f AXISZ(0, 0, 5);
 
 	const Vector3f AXIStick1(-.2, 0, 0);
-	const Vector3f AXIStick2(-.2, -.3, 0);
+	const Vector3f AXIStick2(-.2, -.25, 0);
+
+	const Vector3f AXIStick3(.2, 0, 0);
+	const Vector3f AXIStick4(.2, -.25, 0);
 
     VertexRecorder recorder;
     recorder.record_poscolor(ORGN, DKRED);
@@ -159,6 +162,8 @@ void drawAxis()
     recorder.record_poscolor(AXISZ, DKBLUE);
 	recorder.record_poscolor(AXIStick1, W);
 	recorder.record_poscolor(AXIStick2, W);
+	recorder.record_poscolor(AXIStick3, W);
+	recorder.record_poscolor(AXIStick4, W);
 
     recorder.record_poscolor(ORGN, GREY);
     recorder.record_poscolor(-AXISX, GREY);
@@ -429,21 +434,17 @@ int main(int argc, char** argv)
         //inverse kinematics//
        // float thetaz = .01;
 		float d_ik = .00001;
-        Vector3f goal(.3, .23, .5);
-        Vector3f og(.7, .23, .5);
+        Vector3f goal(.3, .25, .5);
+        Vector3f og(.7, .25, .5);
         Vector3f g = og;
 		Vector3f pos = og;
         bool isog = true;
-        float eps = .1;
+        float eps = .02;
         uint16_t count = 0;
 		while (1) {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glEnable(GL_DEPTH_TEST);
-			setViewport(window);
-			if (gDrawAxisAlways || gMousePressed) {
-				drawAxis();
-			}
 			
+			
+
 			if ((g - pos).abs() < eps) {
 				if (isog) {
 					g = goal;
@@ -458,7 +459,7 @@ int main(int argc, char** argv)
 			Matrix3f J = skeleton->getJacobian();
 			//(J.transposed()*J).print();
 			Matrix3f J_p = (J.transposed()*J).inverse()*J.transposed();
-			Vector3f e = (g - pos);
+			Vector3f e = (g - pos).normalized()*.01;
 			//Vector3f thetas = J_p*e;
 			Vector3f thetas = J.transposed()*e;
 			//cout << "hip theta: " << thetas.x() << endl;
@@ -466,21 +467,31 @@ int main(int argc, char** argv)
 			pos = skeleton->getPos();
 			skeleton->setJointTransform(1, 0, 0, thetas.x());
 			skeleton->setJointTransform(2, 0, 0, thetas.y());
-			skeleton->draw(camera, gDrawSkeleton);
 			//cout << "count "<<count <<endl;
-			while (count < 100){
-				count++;
-				//J.print();
-				cout << "count " << (g - pos).abs() << endl;
-			}
+			//while (count < 100){
+			//	count++;
+			//	//J.print();
+			//	
+			//	// Make back buffer visible
+			//	cout << "count " << (g - pos).abs() << endl;
+			//}
+			count++;
 			if(count > 10){
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				glEnable(GL_DEPTH_TEST);
+				setViewport(window);
+				if (gDrawAxisAlways || gMousePressed) {
+					drawAxis();
+				}
+				skeleton->draw(camera, gDrawSkeleton);
+				glfwSwapBuffers(window);
                 count = 0;
                 //thetaz += .01;
             }
+			
+			glfwPollEvents();
 
-            // Make back buffer visible
-            glfwSwapBuffers(window);
-            glfwPollEvents();
+            
 
         }
         // Check if any input happened during the last frame
