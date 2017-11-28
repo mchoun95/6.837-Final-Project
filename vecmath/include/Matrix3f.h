@@ -84,7 +84,7 @@ Vector3f operator * ( const Matrix3f& m, const Vector3f& v );
 // Matrix-Matrix multiplication
 Matrix3f operator * ( const Matrix3f& x, const Matrix3f& y );
 
-// Scalar multiplication 
+// Scalar multiplication
 Matrix3f operator * (const Matrix3f& m, float f);
 Matrix3f operator * (float f, const Matrix3f& m);
 

@@ -105,9 +105,12 @@ Vector4f operator * (const Matrix4f& m, const Vector4f& v);
 // Matrix-Matrix multiplication
 Matrix4f operator * (const Matrix4f& x, const Matrix4f& y);
 
-// Scalar multiplication 
+// Scalar multiplication
 Matrix4f operator * (const Matrix4f& m, float f);
 Matrix4f operator * (float f, const Matrix4f& m);
+
+//fucking addition
+Matrix4f operator + (const Matrix4f& m1, const Matrix4f& m2);
 
 
 #endif // MATRIX4F_H

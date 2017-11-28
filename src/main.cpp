@@ -422,11 +422,33 @@ int main(int argc, char** argv)
 
         //inverse kinematics//
         float thetaz = .01;
+        Vector3f goal(.71, .29, .5);
+        Vector3f og(.5, .5, .5);
+        Vector3f g = og;
+        bool isog = true;
+        float eps = .01;
         uint16_t count = 0;
         while(1){
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
             setViewport(window);
+            if (gDrawAxisAlways || gMousePressed) {
+                drawAxis();
+            }
+            Vector3f pos = og;
+            if ((g - pos).abs() < eps){
+                if (isog){
+                    g = goal;
+                    isog = false;
+                }
+                else{
+                    g = og;
+                    isog = true;
+                }
+            }
+            //compute J
+            Matrix3f J = skeleton->getJacobian();
+
             skeleton->setJointTransform(2, 0, 0, thetaz);
             skeleton->draw(camera, gDrawSkeleton);
             cout << "count "<<count <<endl;
@@ -438,6 +460,8 @@ int main(int argc, char** argv)
 
             // Make back buffer visible
             glfwSwapBuffers(window);
+            glfwPollEvents();
+
         }
         // Check if any input happened during the last frame
         glfwPollEvents();

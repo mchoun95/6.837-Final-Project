@@ -101,10 +101,10 @@ void SkeletalModel::loadSkeleton(const char* filename)
 		//cerr << x << "," << y << "," <<z << endl;
 		//storage variable
 		Joint * jt = new Joint();
-		
+
 		//store transform
 		jt->transform = Matrix4f::translation(x, y, z);
-		
+
 		//add the joint to the list of joints
 		m_joints.push_back(jt);
 
@@ -155,7 +155,7 @@ void SkeletalModel::helpDrawJoints(Joint * jt,const Camera& camera) {
 	Matrix4f M = m_matrixStack.top();
 	camera.SetUniforms(program, M);
 	drawSphere(0.025f, 12, 12);
-	
+
 	//traverse the tree adding joints at each child
 	for (int i = 0; i < jt->children.size(); i++) {
 		helpDrawJoints(jt->children[i], camera);
@@ -165,10 +165,51 @@ void SkeletalModel::helpDrawJoints(Joint * jt,const Camera& camera) {
 	//cerr << "draw" << endl;
 }
 
+// Vector3f helpFindPos(Joint * jt){
+//     m_matrixStack..push(jt->transform);
+//     Matrix4f M = m_matrixStack.top();
+//     if(jt->children.size() == 0){
+//         return jt->currentJointToWorldTransform;
+//     }
+//     for (int i = 0; i < jt->children.size(); i++) {
+// 		return helpDrawJoints(jt->children[i], camera);
+// 	}
+//     m_matrixStack.pop();
+// }
+
+Matrix3f SkeletalModel::getJacobian(){
+    Matrix3f J;
+    Vector3f P;
+    float dt1 = .01;
+    float dt2 = .01;
+    P = (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+    Vector3f P_1n = perturbSystem(1, dt1)/dt1;
+    Vector3f P_2n = perturbSystem(2, dt2)/dt2;
+    J = Matrix3f(0.0f, 0.0f, 0.0f,
+                 0.0f, 0.0f, 0.0f,
+                 0.0f, 0.0f, 0.0f);
+    // J = Matrix3f( P_1n.x, P_2n.x, 0.0f,
+    //               P_1n.y, P_2n.y, 0.0f,
+    //                    0.0f,      0.0f, 0.0f);
+
+    return J;
+}
+
+Vector3f SkeletalModel::perturbSystem(int jointIndex, float rZ){
+    Matrix4f M = Matrix4f::translation(m_joints[jointIndex]->transform.getCol(3).xyz());
+    Matrix4f rotz = Matrix4f::rotateZ(rZ);
+    m_joints[jointIndex]->transform = m_joints[jointIndex]->transform + M*rotz;
+    Vector3f P;
+    P = (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+    // m_joints[jointIndex]->transform = m_joints[jointIndex]->transform - M*rotz;
+    m_joints[jointIndex]->transform =  M*rotz;
+
+    return P;
+}
 
 void SkeletalModel::drawSkeleton(const Camera& camera)
 {
-    // Draw cylinders between the joints. You will need to add a recursive 
+    // Draw cylinders between the joints. You will need to add a recursive
     // helper function to traverse the joint hierarchy.
     //
     // We recommend using drawCylinder(6, 0.02f, <height>);
@@ -187,7 +228,7 @@ void SkeletalModel::helpDrawBones(Joint * jt, const Camera& camera) {
 	//push the current transform
 	m_matrixStack.push(jt->transform);
 	Matrix4f M = m_matrixStack.top();
-	
+
 	//traverse the tree adding joints at each child
 	for (int i = 0; i < jt->children.size(); i++) {
 		//Get length and oreintation information and draw the bone
@@ -287,4 +328,3 @@ void SkeletalModel::updateMesh()
 	}
 
 }
-

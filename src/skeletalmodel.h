@@ -45,6 +45,9 @@ public:
     // changes in the slider values
     void setJointTransform(int jointIndex, float rX, float rY, float rZ);
 
+    // JACOBIAN!!!!!!!!!!!!!!!!!!
+    Matrix3f getJacobian();
+    Vector3f perturbSystem(int jointIndex, float rZ);
     // Part 2: Skeletal Subspace Deformation
 
     // 2.3. Implement SSD
