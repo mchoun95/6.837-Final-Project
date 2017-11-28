@@ -140,11 +140,15 @@ void drawAxis()
     const Vector3f DKGREEN(0.5f, 1.0f, 0.5f);
     const Vector3f DKBLUE(0.5f, 0.5f, 1.0f);
     const Vector3f GREY(0.5f, 0.5f, 0.5f);
+	const Vector3f W(1.0f, 1.0f, 1.0f);
 
     const Vector3f ORGN(0, 0, 0);
     const Vector3f AXISX(5, 0, 0);
     const Vector3f AXISY(0, 5, 0);
     const Vector3f AXISZ(0, 0, 5);
+
+	const Vector3f AXIStick1(-.2, 0, 0);
+	const Vector3f AXIStick2(-.2, -.3, 0);
 
     VertexRecorder recorder;
     recorder.record_poscolor(ORGN, DKRED);
@@ -153,6 +157,8 @@ void drawAxis()
     recorder.record_poscolor(AXISY, DKGREEN);
     recorder.record_poscolor(ORGN, DKBLUE);
     recorder.record_poscolor(AXISZ, DKBLUE);
+	recorder.record_poscolor(AXIStick1, W);
+	recorder.record_poscolor(AXIStick2, W);
 
     recorder.record_poscolor(ORGN, GREY);
     recorder.record_poscolor(-AXISX, GREY);
@@ -421,41 +427,54 @@ int main(int argc, char** argv)
         }
 
         //inverse kinematics//
-        float thetaz = .01;
-        Vector3f goal(.71, .29, .5);
-        Vector3f og(.5, .5, .5);
+       // float thetaz = .01;
+		float d_ik = .0000001;
+        Vector3f goal(.5, .5, 0);
+        Vector3f og(-.2, -.2, 0);
         Vector3f g = og;
+		Vector3f pos = og;
         bool isog = true;
-        float eps = .01;
+        float eps = .0001;
         uint16_t count = 0;
-        while(1){
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glEnable(GL_DEPTH_TEST);
-            setViewport(window);
-            if (gDrawAxisAlways || gMousePressed) {
-                drawAxis();
-            }
-            Vector3f pos = og;
-            if ((g - pos).abs() < eps){
-                if (isog){
-                    g = goal;
-                    isog = false;
-                }
-                else{
-                    g = og;
-                    isog = true;
-                }
-            }
-            //compute J
-            Matrix3f J = skeleton->getJacobian();
-
-            skeleton->setJointTransform(2, 0, 0, thetaz);
-            skeleton->draw(camera, gDrawSkeleton);
-            cout << "count "<<count <<endl;
-            count++;
-            if(count == 10){
+		while (1) {
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glEnable(GL_DEPTH_TEST);
+			setViewport(window);
+			if (gDrawAxisAlways || gMousePressed) {
+				drawAxis();
+			}
+			
+			if ((g - pos).abs() < eps) {
+				if (isog) {
+					g = goal;
+					isog = false;
+				}
+				else {
+					g = og;
+					isog = true;
+				}
+			}
+			//compute J
+			Matrix3f J = skeleton->getJacobian();
+			//(J.transposed()*J).print();
+			Matrix3f J_p = (J.transposed()*J).inverse()*J.transposed();
+			Vector3f e = (g - pos).normalized()*d_ik;
+			//Vector3f thetas = J_p*e;
+			Vector3f thetas = J.transposed()*e;
+			//cout << "hip theta: " << thetas.x() << endl;
+			//cout << "knee theta: " << thetas.y() << endl;
+			pos = pos + e;
+			skeleton->setJointTransform(1, 0, 0, thetas.x());
+			skeleton->setJointTransform(2, 0, 0, thetas.y());
+			skeleton->draw(camera, gDrawSkeleton);
+			//cout << "count "<<count <<endl;
+			while (count < 500){
+				count++;
+				cout << "count " << (g - pos).abs() << endl;
+			}
+			if(count > 10){
                 count = 0;
-                thetaz += .01;
+                //thetaz += .01;
             }
 
             // Make back buffer visible
