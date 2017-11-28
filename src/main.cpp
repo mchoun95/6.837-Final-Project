@@ -277,8 +277,10 @@ void initGUI(GLFWwindow* glfwwin) {
                 textBox->setValue(buff);
 
                 if (skeleton) {
+                    // skeleton->setIK(())
                     // update animation
-                    skeleton->setJointTransform(i, g_jointangles[i].x(), g_jointangles[i].y(), g_jointangles[i].z());
+                    // skeleton->setJointTransform(i, g_jointangles[i].x(), g_jointangles[i].y(), g_jointangles[i].z());
+
                     updateMesh();
                 }
             });
@@ -405,26 +407,41 @@ int main(int argc, char** argv)
     // Main Loop
     while (!glfwWindowShouldClose(window)) {
         // Clear the rendering window
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //
+        // // Draw nanogui
+        // // screen->drawContents();
+        // // screen->drawWidgets();
+        // glEnable(GL_DEPTH_TEST);
 
-        // Draw nanogui
-        screen->drawContents();
-        screen->drawWidgets();
-        glEnable(GL_DEPTH_TEST);
-
-        setViewport(window);
+//        setViewport(window);
 
         if (gDrawAxisAlways || gMousePressed) {
             drawAxis();
         }
 
-        skeleton->draw(camera, gDrawSkeleton);
+        //inverse kinematics//
+        float thetaz = .01;
+        uint16_t count = 0;
+        while(1){
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glEnable(GL_DEPTH_TEST);
+            setViewport(window);
+            skeleton->setJointTransform(2, 0, 0, thetaz);
+            skeleton->draw(camera, gDrawSkeleton);
+            cout << "count "<<count <<endl;
+            count++;
+            if(count == 10){
+                count = 0;
+                thetaz += .01;
+            }
 
-        // Make back buffer visible
-        glfwSwapBuffers(window);
-
+            // Make back buffer visible
+            glfwSwapBuffers(window);
+        }
         // Check if any input happened during the last frame
         glfwPollEvents();
+
     }
     freeSkeleton();
 
