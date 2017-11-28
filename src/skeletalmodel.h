@@ -48,6 +48,7 @@ public:
     // JACOBIAN!!!!!!!!!!!!!!!!!!
     Matrix3f getJacobian();
     Vector3f perturbSystem(int jointIndex, float rZ);
+	Vector3f getPos();
     // Part 2: Skeletal Subspace Deformation
 
     // 2.3. Implement SSD

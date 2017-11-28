@@ -177,14 +177,20 @@ void SkeletalModel::helpDrawJoints(Joint * jt,const Camera& camera) {
 //     m_matrixStack.pop();
 // }
 
+Vector3f SkeletalModel::getPos() {
+	return (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+}
+
+
 Matrix3f SkeletalModel::getJacobian(){
     Matrix3f J;
     Vector3f P;
-    float dt1 = .000001;
-    float dt2 = .000001;
+    float dt1 = .1;
+    float dt2 = .1;
     P = (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
-    Vector3f P_1n = perturbSystem(1, dt1)/dt1;
-    Vector3f P_2n = perturbSystem(2, dt2)/dt2;
+	P.print();
+    Vector3f P_1n = (perturbSystem(1, dt1)-P)/dt1;
+    Vector3f P_2n = (perturbSystem(2, dt2)-P)/dt2;
     //J = Matrix3f(0.0f, 0.0f, 0.0f,
     //             0.0f, 0.0f, 0.0f,
     //             0.0f, 0.0f, 0.0f);
@@ -198,11 +204,14 @@ Matrix3f SkeletalModel::getJacobian(){
 Vector3f SkeletalModel::perturbSystem(int jointIndex, float rZ){
     Matrix4f M = Matrix4f::translation(m_joints[jointIndex]->transform.getCol(3).xyz());
     Matrix4f rotz = Matrix4f::rotateZ(rZ);
+	Matrix4f irotz = Matrix4f::rotateZ(-rZ);
     m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*rotz;
     Vector3f P;
-    P = (m_joints[jointIndex]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
-    m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*rotz.inverse();
-   // m_joints[jointIndex]->transform =  rotz;
+	updateCurrentJointToWorldTransforms();
+    P = (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+    m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*irotz;
+	updateCurrentJointToWorldTransforms();
+	// m_joints[jointIndex]->transform =  rotz;
 
     return P;
 }

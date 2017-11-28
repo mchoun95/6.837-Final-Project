@@ -428,13 +428,13 @@ int main(int argc, char** argv)
 
         //inverse kinematics//
        // float thetaz = .01;
-		float d_ik = .0000001;
-        Vector3f goal(.5, .5, 0);
-        Vector3f og(-.2, -.2, 0);
+		float d_ik = .00001;
+        Vector3f goal(.3, .23, .5);
+        Vector3f og(.7, .23, .5);
         Vector3f g = og;
 		Vector3f pos = og;
         bool isog = true;
-        float eps = .0001;
+        float eps = .1;
         uint16_t count = 0;
 		while (1) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -458,18 +458,19 @@ int main(int argc, char** argv)
 			Matrix3f J = skeleton->getJacobian();
 			//(J.transposed()*J).print();
 			Matrix3f J_p = (J.transposed()*J).inverse()*J.transposed();
-			Vector3f e = (g - pos).normalized()*d_ik;
+			Vector3f e = (g - pos);
 			//Vector3f thetas = J_p*e;
 			Vector3f thetas = J.transposed()*e;
 			//cout << "hip theta: " << thetas.x() << endl;
 			//cout << "knee theta: " << thetas.y() << endl;
-			pos = pos + e;
+			pos = skeleton->getPos();
 			skeleton->setJointTransform(1, 0, 0, thetas.x());
 			skeleton->setJointTransform(2, 0, 0, thetas.y());
 			skeleton->draw(camera, gDrawSkeleton);
 			//cout << "count "<<count <<endl;
-			while (count < 500){
+			while (count < 100){
 				count++;
+				//J.print();
 				cout << "count " << (g - pos).abs() << endl;
 			}
 			if(count > 10){
