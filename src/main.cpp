@@ -291,7 +291,6 @@ void initGUI(GLFWwindow* glfwwin) {
                     // skeleton->setIK(())
                     // update animation
                     // skeleton->setJointTransform(i, g_jointangles[i].x(), g_jointangles[i].y(), g_jointangles[i].z());
-
                     updateMesh();
                 }
             });
@@ -394,7 +393,6 @@ int main(int argc, char** argv)
         return -1;
     }
     std::string basepath = argv[1];
-
     window = createOpenGLWindow(1024, 1024, "Assignment 2");
 
     initGUI(window);
@@ -433,6 +431,7 @@ int main(int argc, char** argv)
 
         //inverse kinematics//
        // float thetaz = .01;
+       // cout<<"atleastgothere"<<endl;
 		float d_ik = .00001;
         Vector3f goal(.3, .25, .5);
         Vector3f og(.7, .25, .5);
@@ -442,9 +441,6 @@ int main(int argc, char** argv)
         float eps = .02;
         uint16_t count = 0;
 		while (1) {
-			
-			
-
 			if ((g - pos).abs() < eps) {
 				if (isog) {
 					g = goal;
@@ -457,13 +453,19 @@ int main(int argc, char** argv)
 			}
 			//compute J
 			Matrix3f J = skeleton->getJacobian();
-			//(J.transposed()*J).print();
-			Matrix3f J_p = (J.transposed()*J).inverse()*J.transposed();
-			Vector3f e = (g - pos).normalized()*.01;
-			//Vector3f thetas = J_p*e;
-			Vector3f thetas = J.transposed()*e;
+            //compute J+
+            Matrix2f J_temp = J.getSubmatrix2x2(0,0);
+            J_temp = (J_temp.transposed()*J_temp).inverse()*J_temp.transposed();
+            //initialize all zeros
+            Matrix3f J_p = Matrix3f();
+            J_p.setSubmatrix2x2(0, 0, J_temp);
+
+            float rate = .001;
+			Vector3f e = (g - pos).normalized()*rate;
+            Vector3f thetas = J_p*e;
 			//cout << "hip theta: " << thetas.x() << endl;
 			//cout << "knee theta: " << thetas.y() << endl;
+            //only rotate about the x axis...
 			pos = skeleton->getPos();
 			skeleton->setJointTransform(1, 0, 0, thetas.x());
 			skeleton->setJointTransform(2, 0, 0, thetas.y());
@@ -471,7 +473,7 @@ int main(int argc, char** argv)
 			//while (count < 100){
 			//	count++;
 			//	//J.print();
-			//	
+			//
 			//	// Make back buffer visible
 			//	cout << "count " << (g - pos).abs() << endl;
 			//}
@@ -488,15 +490,10 @@ int main(int argc, char** argv)
                 count = 0;
                 //thetaz += .01;
             }
-			
 			glfwPollEvents();
-
-            
-
         }
         // Check if any input happened during the last frame
         glfwPollEvents();
-
     }
     freeSkeleton();
 

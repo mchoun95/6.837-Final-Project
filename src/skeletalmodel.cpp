@@ -20,7 +20,6 @@ SkeletalModel::~SkeletalModel() {
         delete m_joints.back();
         m_joints.pop_back();
     }
-
     glDeleteProgram(program);
 }
 
@@ -30,7 +29,6 @@ void SkeletalModel::load(const char *skeletonFile, const char *meshFile, const c
 
     m_mesh.load(meshFile);
     m_mesh.loadAttachments(attachmentsFile, (int)m_joints.size());
-
     computeBindWorldToJointTransforms();
     updateCurrentJointToWorldTransforms();
 }
@@ -92,6 +90,7 @@ void SkeletalModel::loadSkeleton(const char* filename)
 	float y = 0;
 	float z = 0;
 	int parent = 0;
+    // cout<<skel<<endl;
 
 	//start parsing
 	while (skel >> x) {
@@ -187,17 +186,18 @@ Matrix3f SkeletalModel::getJacobian(){
     Vector3f P;
     float dt1 = .1;
     float dt2 = .1;
+    // cout<<m_joints.size()<<endl;
+    Matrix4f eh = m_joints[4]->currentJointToWorldTransform;
+
+    Vector4f what = eh*Vector4f(0,0,0,1);
+
     P = (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
-	P.print();
     Vector3f P_1n = (perturbSystem(1, dt1)-P)/dt1;
     Vector3f P_2n = (perturbSystem(2, dt2)-P)/dt2;
-    //J = Matrix3f(0.0f, 0.0f, 0.0f,
-    //             0.0f, 0.0f, 0.0f,
-    //             0.0f, 0.0f, 0.0f);
+
     J = Matrix3f( P_1n.x(), P_2n.x(), 0.0f,
                    P_1n.y(), P_2n.y(), 0.0f,
                         0.0f,      0.0f, 0.0f);
-
     return J;
 }
 
