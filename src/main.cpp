@@ -383,6 +383,8 @@ void freeSkeleton() {
 }
 }
 
+Vector3f goal_check_simple(Vector3f pos, Vector3f g, Vector3f goal, Vector3f og, float eps, bool & isog);			// Goal checking for simple two point oscilation
+Vector3f goal_check_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind);			// Goal checking for spline of points
 
 int main(int argc, char** argv)
 {
@@ -415,68 +417,59 @@ int main(int argc, char** argv)
 
     // Main Loop
     while (!glfwWindowShouldClose(window)) {
-        // Clear the rendering window
-        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //
-        // // Draw nanogui
-        // // screen->drawContents();
-        // // screen->drawWidgets();
-        // glEnable(GL_DEPTH_TEST);
-
-//        setViewport(window);
 
         if (gDrawAxisAlways || gMousePressed) {
             drawAxis();
         }
 
         //inverse kinematics//
-       // float thetaz = .01;
-       // cout<<"atleastgothere"<<endl;
-		float d_ik = .00001;
-        Vector3f goal(.3, .25, .5);
-        Vector3f og(.7, .25, .5);
-        Vector3f g = og;
-		Vector3f pos = og;
-        bool isog = true;
-        float eps = .02;
-        uint16_t count = 0;
+		vector<Vector3f> path;
+		Vector3f    g1								  (.3, .25, .5);
+		Vector3f    g2								  (.4, .2, .5);
+		Vector3f    g3                                (.6, .35, .5);
+		Vector3f    g4								  (.7, .25, .5);
+
+		path.push_back(g1);
+		path.push_back(g2);
+		path.push_back(g3);
+		path.push_back(g4);
+
+		Vector3f	goal							  (.3, .25, .5);		// A Desired Goal Point
+        Vector3f	og							      (.7, .25, .5);		// The Original point
+        Vector3f	g								= og;				    // Initialize the goal to the Original point
+		Vector3f	pos								= og;					// Initialize the Position of the end effector to the Original point
+        
+		bool		isog							= true;					// Boolean to check if the end effector has hit it's goal
+		float		eps								= .02;					// An epsilon to define what is accepted as a goal hit				
+        uint16_t	count							= 0;					// A count to delay how many frames are rendered
+		int         point_ind                       = 0;					// The index of the current spline goal point
+
 		while (1) {
-			if ((g - pos).abs() < eps) {
-				if (isog) {
-					g = goal;
-					isog = false;
-				}
-				else {
-					g = og;
-					isog = true;
-				}
-			}
+			// Goal checking
+			// Check if the end effector is close to the goal
+			// If it is then swap the goal point 
+			//g = goal_check_simple(pos, g, goal, og, eps, isog);
+			g = goal_check_spline(pos, g, path, og, eps, point_ind);
+			
 			//compute J
 			Matrix3f J = skeleton->getJacobian();
-            //compute J+
+            
+			//compute J+
             Matrix2f J_temp = J.getSubmatrix2x2(0,0);
             J_temp = (J_temp.transposed()*J_temp).inverse()*J_temp.transposed();
-            //initialize all zeros
             Matrix3f J_p = Matrix3f();
             J_p.setSubmatrix2x2(0, 0, J_temp);
 
-            float rate = .001;
-			Vector3f e = (g - pos).normalized()*rate;
-            Vector3f thetas = J_p*e;
-			//cout << "hip theta: " << thetas.x() << endl;
-			//cout << "knee theta: " << thetas.y() << endl;
-            //only rotate about the x axis...
+            float rate = .001;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error		
+			Vector3f e = (g - pos).normalized()*rate;		// Step vector in coordinate space
+            Vector3f thetas = J_p*e;						// Step vector in joint space
+
+
 			pos = skeleton->getPos();
 			skeleton->setJointTransform(1, 0, 0, thetas.x());
 			skeleton->setJointTransform(2, 0, 0, thetas.y());
-			//cout << "count "<<count <<endl;
-			//while (count < 100){
-			//	count++;
-			//	//J.print();
-			//
-			//	// Make back buffer visible
-			//	cout << "count " << (g - pos).abs() << endl;
-			//}
+
+
 			count++;
 			if(count > 10){
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -488,7 +481,6 @@ int main(int argc, char** argv)
 				skeleton->draw(camera, gDrawSkeleton);
 				glfwSwapBuffers(window);
                 count = 0;
-                //thetaz += .01;
             }
 			glfwPollEvents();
         }
@@ -504,4 +496,31 @@ int main(int argc, char** argv)
 
     glfwTerminate(); // destroy the window
     return 0;
+}
+
+Vector3f goal_check_simple(Vector3f pos, Vector3f g, Vector3f goal, Vector3f og, float eps, bool & isog) {
+	if ((g - pos).abs() < eps) {
+		if (isog) {
+			g = goal;
+			isog = false;
+		}
+		else {
+			g = og;
+			isog = true;
+		}
+	}
+	return g;
+}
+
+Vector3f goal_check_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind) {
+	if ((g - pos).abs() < eps) {
+		if (++ind < path.size()) {
+			g = path[ind];
+		}
+		else {
+			ind = 0;
+			g = path[ind];
+		}
+	}
+	return g;
 }
