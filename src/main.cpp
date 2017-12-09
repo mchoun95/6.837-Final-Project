@@ -15,6 +15,7 @@
 #include "camera.h"
 #include "vertexrecorder.h"
 #include "skeletalmodel.h"
+#include "curve.h"
 
 using namespace std;
 // Note: using namespace nanogui not possible due to naming conflicts
@@ -49,8 +50,23 @@ bool gMousePressed = false;
 bool gDrawSkeleton = true;
 bool gDrawAxisAlways = false;
 
+//stuff to draw a spline
+
+struct Recorders {
+    VertexRecorder curve;
+    VertexRecorder curveFrames;
+    VertexRecorder surface;
+    VertexRecorder surfaceNormals;
+};
+Recorders* recorders;
+
+vector<vector<Vector3f> > gCtrlPoints;
+vector<Curve> gCurves;
+
 // Declarations of functions whose implementations occur later.
 void drawAxis(void);
+void drawCurve(void);
+void drawPoints(void);
 
 static void keyCallback(GLFWwindow* window, int key,
     int scancode, int action, int mods)
@@ -174,6 +190,99 @@ void drawAxis()
 
     glLineWidth(3);
     recorder.draw(GL_LINES);
+
+}
+
+void drawPoints()
+{
+    // Setup for point drawing
+    VertexRecorder recorder;
+    glUseProgram(program_color);
+    Matrix4f M = Matrix4f::translation(camera.GetCenter()).inverse();
+    camera.SetUniforms(program_color, M);
+
+    const Vector3f COLOR(1, 1, 0.0f);
+
+    for (int i = 0; i < (int)gCtrlPoints.size(); i++) {
+        // There are relatively few control points, so we can
+        // get away with recording this for each frame.
+        // VertexRecorder recorder;
+        for (int j = 0; j < (int)gCtrlPoints[i].size(); j++) {
+            Vector3f shifted = gCtrlPoints[i][j] - Vector3f(.5, .5, .5);
+            // shifted.print();
+            if (0 < j  & j < (int)gCtrlPoints[i].size()-1){
+                recorder.record_poscolor(shifted, COLOR);
+                recorder.record_poscolor(shifted, COLOR);
+            }
+            else {
+                recorder.record_poscolor(shifted, COLOR);
+            }
+        }
+    }
+        // recorder.draw(GL_LINE_STRIP);
+    glLineWidth(3);
+    recorder.draw(GL_LINES);
+}
+
+void drawCurve()
+{
+    VertexRecorder recorder;
+    glUseProgram(program_color);
+    Matrix4f M = Matrix4f::translation(camera.GetCenter()).inverse();
+    camera.SetUniforms(program_color, M);
+
+    const Vector3f COLOR(1, 1, 0.0f);
+
+    for (int i = 0; i < (int)gCurves.size(); i++) {
+        // There are relatively few control points, so we can
+        // get away with recording this for each frame.
+        // VertexRecorder recorder;
+        for (int j = 0; j < (int)gCurves[i].size(); j++) {
+            Vector3f shifted = gCurves[i][j].V - Vector3f(.5, .5, .5);
+            // shifted.print();
+            if (0 < j  & j < (int)gCurves[i].size()-1){
+                recorder.record_poscolor(shifted, COLOR);
+                recorder.record_poscolor(shifted, COLOR);
+            }
+            else {
+                recorder.record_poscolor(shifted, COLOR);
+            }
+        }
+    }
+        // recorder.draw(GL_LINE_STRIP);
+    glLineWidth(3);
+    recorder.draw(GL_LINES);
+}
+
+void recordVertices() {
+    // For complex models, it is too expensive to specify
+    // all vertices each frame. We can make things more efficient
+    // by recording the vertices on application startup, and then
+    // drawing from the pre-recorded data structure.
+
+    recorders = new Recorders();
+
+    // CURVES
+    for (int i = 0; i < (int)gCurves.size(); i++) {
+        recordCurve(gCurves[i], &recorders->curve);
+    }
+
+    // for (int i = 0; i < (int)gCurves.size(); i++) {
+    //     recordCurveFrames(gCurves[i], &recorders->curveFrames, gLineLen);
+    // }
+
+    // SURFACE
+    // for (int i = 0; i < (int)gSurfaces.size(); i++) {
+    //     recordSurface(gSurfaces[i], &recorders->surface);
+    // }
+    // for (int i = 0; i < (int)gSurfaces.size(); i++) {
+    //     recordNormals(gSurfaces[i], &recorders->surfaceNormals, gLineLen);
+    // }
+}
+
+void freeVertices() {
+    delete recorders;
+    recorders = nullptr;
 }
 
 void initRendering()
@@ -386,6 +495,21 @@ void freeSkeleton() {
 
 int main(int argc, char** argv)
 {
+    ///initialize curve stuff
+    Vector3f A(.3, .25, .5);
+    Vector3f B(.4, .20, .5);
+    Vector3f C(.5, .20, .5);
+    Vector3f D(.7, .25, .5);
+    vector<Vector3f> curve1;
+    curve1.push_back(A);
+    curve1.push_back(B);
+    curve1.push_back(C);
+    curve1.push_back(D);
+    gCtrlPoints.push_back(curve1);
+    int steps = 20;
+    gCurves.push_back(evalBezier(curve1, steps));
+    // cout << gCurves[0].size() << "size" <<endl;
+    /////////////
     if (argc < 2)
     {
         cout << "Usage: " << argv[0] << " PREFIX" << endl;
@@ -429,6 +553,9 @@ int main(int argc, char** argv)
             drawAxis();
         }
 
+        //draw the spline things
+        // drawCurve();
+
         //inverse kinematics//
        // float thetaz = .01;
        // cout<<"atleastgothere"<<endl;
@@ -438,7 +565,7 @@ int main(int argc, char** argv)
         Vector3f g = og;
 		Vector3f pos = og;
         bool isog = true;
-        float eps = .02;
+        float eps = .01;
         uint16_t count = 0;
 		while (1) {
 			if ((g - pos).abs() < eps) {
@@ -484,6 +611,8 @@ int main(int argc, char** argv)
 				setViewport(window);
 				if (gDrawAxisAlways || gMousePressed) {
 					drawAxis();
+                    drawPoints();
+                    drawCurve();
 				}
 				skeleton->draw(camera, gDrawSkeleton);
 				glfwSwapBuffers(window);

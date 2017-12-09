@@ -78,6 +78,7 @@ list (APPEND A2_SRC
   src/joint.cpp
   src/mesh.cpp
   src/skeletalmodel.cpp
+  src/curve.cpp
 )
 list (APPEND A2_HEADER
   src/gl.h
@@ -89,6 +90,7 @@ list (APPEND A2_HEADER
   src/joint.h
   src/mesh.h
   src/skeletalmodel.h
+  src/curve.h
 )
 
 add_executable(a2 ${A2_SRC} ${A2_HEADER})
