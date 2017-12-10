@@ -254,35 +254,18 @@ void drawCurve()
     recorder.draw(GL_LINES);
 }
 
-void recordVertices() {
-    // For complex models, it is too expensive to specify
-    // all vertices each frame. We can make things more efficient
-    // by recording the vertices on application startup, and then
-    // drawing from the pre-recorded data structure.
-
-    recorders = new Recorders();
-
-    // CURVES
+vector<Vector3f> getPath(){
+    vector <Vector3f> path;
     for (int i = 0; i < (int)gCurves.size(); i++) {
-        recordCurve(gCurves[i], &recorders->curve);
+        // There are relatively few control points, so we can
+        // get away with recording this for each frame.
+        // VertexRecorder recorder;
+        for (int j = 0; j < (int)gCurves[i].size(); j++) {
+            Vector3f shifted = gCurves[i][j].V ;
+            path.push_back(shifted);
+        }
     }
-
-    // for (int i = 0; i < (int)gCurves.size(); i++) {
-    //     recordCurveFrames(gCurves[i], &recorders->curveFrames, gLineLen);
-    // }
-
-    // SURFACE
-    // for (int i = 0; i < (int)gSurfaces.size(); i++) {
-    //     recordSurface(gSurfaces[i], &recorders->surface);
-    // }
-    // for (int i = 0; i < (int)gSurfaces.size(); i++) {
-    //     recordNormals(gSurfaces[i], &recorders->surfaceNormals, gLineLen);
-    // }
-}
-
-void freeVertices() {
-    delete recorders;
-    recorders = nullptr;
+    return path;
 }
 
 void initRendering()
@@ -499,8 +482,8 @@ int main(int argc, char** argv)
 {
     ///initialize curve stuff
     Vector3f A(.3, .25, .5);
-    Vector3f B(.4, .20, .5);
-    Vector3f C(.5, .20, .5);
+    Vector3f B(.4, .35, .5);
+    Vector3f C(.6, .10, .5);
     Vector3f D(.7, .25, .5);
     vector<Vector3f> curve1;
     curve1.push_back(A);
@@ -508,8 +491,9 @@ int main(int argc, char** argv)
     curve1.push_back(C);
     curve1.push_back(D);
     gCtrlPoints.push_back(curve1);
-    int steps = 20;
+    int steps = 10;
     gCurves.push_back(evalBezier(curve1, steps));
+    vector<Vector3f> path = getPath();
     // cout << gCurves[0].size() << "size" <<endl;
     /////////////
     if (argc < 2)
@@ -550,16 +534,15 @@ int main(int argc, char** argv)
         // drawCurve();
 
         //inverse kinematics//
-		vector<Vector3f> path;
-		Vector3f    g1								  (.3, .25, .5);
-		Vector3f    g2								  (.4, .2, .5);
-		Vector3f    g3                                (.6, .35, .5);
-		Vector3f    g4								  (.7, .25, .5);
-
-		path.push_back(g1);
-		path.push_back(g2);
-		path.push_back(g3);
-		path.push_back(g4);
+		// Vector3f    g1								  (.3, .25, .5);
+		// Vector3f    g2								  (.4, .2, .5);
+		// Vector3f    g3                                (.6, .35, .5);
+		// Vector3f    g4								  (.7, .25, .5);
+        //
+		// path.push_back(g1);
+		// path.push_back(g2);
+		// path.push_back(g3);
+		// path.push_back(g4);
 
 		Vector3f	goal							  (.3, .25, .5);		// A Desired Goal Point
         Vector3f	og							      (.7, .25, .5);		// The Original point
