@@ -554,6 +554,49 @@ int main(int argc, char** argv)
         uint16_t	count							= 0;					// A count to delay how many frames are rendered
 		int         point_ind                       = 0;					// The index of the current spline goal point
 
+		vector<int> speed;
+		int         s_ind							= 0;
+
+		//test speed profile
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(3);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(4);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(5);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(6);
+		speed.push_back(10);
+		speed.push_back(10);
+		speed.push_back(10);
+		speed.push_back(10);
+		speed.push_back(10);
+		speed.push_back(10);
+
 		while (1) {
 			// Goal checking
 			// Check if the end effector is close to the goal
@@ -581,7 +624,7 @@ int main(int argc, char** argv)
 
 
 			count++;
-			if(count > 10){
+			if(count > speed[s_ind]){
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glEnable(GL_DEPTH_TEST);
 				setViewport(window);
@@ -593,6 +636,10 @@ int main(int argc, char** argv)
 				skeleton->draw(camera, gDrawSkeleton);
 				glfwSwapBuffers(window);
                 count = 0;
+				s_ind++;
+				if (s_ind >= speed.size()) {
+					s_ind = 0;
+				}
             }
 			glfwPollEvents();
         }
