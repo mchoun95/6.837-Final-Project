@@ -180,6 +180,87 @@ Vector3f SkeletalModel::getPos() {
 	return (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
 }
 
+std::vector<Matrix3f> SkeletalModel::getJacobians() {
+	std::vector<Matrix3f> Jacobians;
+	
+	//relevant jacobians for skeleton
+	Matrix3f J_L_Shoulder;
+	Matrix3f J_R_Shoulder;
+	Matrix3f J_L_Hand;
+	Matrix3f J_R_Hand;
+	Matrix3f J_L_Hip;
+	Matrix3f J_R_Hip;
+	Matrix3f J_L_Foot;
+	Matrix3f J_R_Foot;
+
+	//relevant points for jacobians
+	Vector3f P_R_Shoulder;
+	Vector3f P_L_Shoulder;
+	Vector3f P_R_Hand;
+	Vector3f P_L_Hand;
+	Vector3f P_R_Hip;
+	Vector3f P_L_Hip;
+	Vector3f P_R_Foot;
+	Vector3f P_L_Foot;
+
+	//time step
+	float dt = .1;
+	
+	//transforms needed to make jacobians
+	Matrix4f R_Shoulder_WS						= m_joints[16]->currentJointToWorldTransform;
+	Matrix4f L_Shoulder_WS						= m_joints[13]->currentJointToWorldTransform;
+	Matrix4f R_Hip_WS                           = m_joints[9]->currentJointToWorldTransform;
+	Matrix4f L_Hip_WS                           = m_joints[5]->currentJointToWorldTransform;
+
+	Matrix4f R_Hand_RSS;
+	Matrix4f L_Hand_LSS;
+
+	Matrix4f R_Foot_RHS;
+	Matrix4f L_Foot_LHS;
+	
+	//Right Shoulder Jacobian Construction
+	P_R_Shoulder                                = (R_Shoulder_WS*Vector4f(0,0,0,1)).xyz();
+	Vector3f P_1n = (perturbSystem(15, dt) - P_R_Shoulder) / dt;
+	J_R_Shoulder = Matrix3f(P_1n.x(), 0.0f, 0.0f,
+							P_1n.y(), 0.0f, 0.0f,
+							P_1n.z(), 0.0f, 0.0f);
+	Jacobians.push_back(J_R_Shoulder);
+
+	// Left Shoulder Jacobian Construction
+	P_L_Shoulder                                = (L_Shoulder_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(12, dt) - P_L_Shoulder) / dt;
+	J_L_Shoulder = Matrix3f(P_1n.x(), 0.0f, 0.0f,
+							P_1n.y(), 0.0f, 0.0f,
+							P_1n.z(), 0.0f, 0.0f);
+	Jacobians.push_back(J_L_Shoulder);
+
+
+	P_R_Hand;
+	P_L_Hand;
+	
+	// Right Hip Jacobian Construction
+	P_R_Hip                                     = (R_Hip_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(12, dt) - P_R_Hip) / dt;
+	Vector3f P_2n = (perturbSystem(15, dt) - P_R_Hip) / dt;
+	Vector3f P_3n = (perturbSystem(15, dt) - P_R_Hip) / dt;
+	J_R_Hip = Matrix3f(P_1n.x(), P_2n.x(), P_3n.x(),
+							P_1n.y(), P_2n.y(), P_3n.y(),
+							P_1n.z(), P_2n.z(), P_3n.z());
+
+	Jacobians.push_back(J_L_Shoulder);
+	P_L_Hip										= (L_Hip_WS*Vector4f(0, 0, 0, 1)).xyz();
+	
+	P_R_Foot;
+	P_L_Foot; 
+	/*Vector3f P_1n = (perturbSystem(1, dt1) - P) / dt1;
+	Vector3f P_2n = (perturbSystem(2, dt2) - P) / dt2;
+
+	J = Matrix3f(P_1n.x(), P_2n.x(), 0.0f,
+		P_1n.y(), P_2n.y(), 0.0f,
+		0.0f, 0.0f, 0.0f);
+	return J;*/
+	return Jacobians;
+}
 
 Matrix3f SkeletalModel::getJacobian(){
     Matrix3f J;

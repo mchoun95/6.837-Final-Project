@@ -46,6 +46,7 @@ public:
     void setJointTransform(int jointIndex, float rX, float rY, float rZ);
 
     // JACOBIAN!!!!!!!!!!!!!!!!!!
+	std::vector<Matrix3f> getJacobians();
     Matrix3f getJacobian();
     Vector3f perturbSystem(int jointIndex, float rZ);
 	Vector3f getPos();

@@ -24,14 +24,14 @@ namespace ng = ::nanogui;
 namespace
 {
 // Constants
-//const int njoints = 18;
-//const string jointnames[njoints] = { "root", "chest", "waist", "neck",
-//                                 "right hip", "right leg", "right knee", "right foot",
-//                                 "left hip", "left leg", "left knee", "left foot",
-//                                 "right collarbone", "right shoulder", "right elbow", "left collarbone", "left shoulder", "left elbow" };
+const int njoints = 18;
+const string jointnames[njoints] = { "root", "chest", "waist", "neck",
+                                 "right hip", "right leg", "right knee", "right foot",
+                                 "left hip", "left leg", "left knee", "left foot",
+                                 "right collarbone", "right shoulder", "right elbow", "left collarbone", "left shoulder", "left elbow" };
 
-const int njoints = 5;
-const string jointnames[njoints] = { "root","hip","knee","ankle","foot" };
+//const int njoints = 5;
+//const string jointnames[njoints] = { "root","hip","knee","ankle","foot" };
 
 // Global variables here.
 GLFWwindow* window;
@@ -559,8 +559,9 @@ int main(int argc, char** argv)
 
 		//test speed profile
 		speed.push_back(3);
+		speed.push_back(5);
 		speed.push_back(10);
-		speed.push_back(3);
+		speed.push_back(20);
 
 
 		while (1) {
@@ -590,7 +591,8 @@ int main(int argc, char** argv)
 
 
 			count++;
-			if(count > speed[s_ind]){
+			if(count > 10){
+				//cout << speed[1] << endl;
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glEnable(GL_DEPTH_TEST);
 				setViewport(window);
@@ -605,11 +607,14 @@ int main(int argc, char** argv)
 				if (pos.x() < .4) {
 					s_ind = 0;
 				}
-				if(pos.x() > .4 && pos.x() <.6){
+				if(pos.x() > .4 && pos.x() <.5){
 					s_ind = 1;
 				}
-				if (pos.x() > .6) {
+				if (pos.x() > .5 && pos.x() <.6) {
 					s_ind = 2;
+				}
+				if (pos.x() > .6) {
+					s_ind = 3;
 				}
 				
             }
