@@ -559,43 +559,9 @@ int main(int argc, char** argv)
 
 		//test speed profile
 		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(3);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(4);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(5);
-		speed.push_back(6);
-		speed.push_back(6);
-		speed.push_back(6);
-		speed.push_back(6);
-		speed.push_back(6);
-		speed.push_back(6);
-		speed.push_back(6);
-		speed.push_back(6);
 		speed.push_back(10);
-		speed.push_back(10);
-		speed.push_back(10);
-		speed.push_back(10);
-		speed.push_back(10);
-		speed.push_back(10);
+		speed.push_back(3);
+
 
 		while (1) {
 			// Goal checking
@@ -636,10 +602,16 @@ int main(int argc, char** argv)
 				skeleton->draw(camera, gDrawSkeleton);
 				glfwSwapBuffers(window);
                 count = 0;
-				s_ind++;
-				if (s_ind >= speed.size()) {
+				if (pos.x() < .4) {
 					s_ind = 0;
 				}
+				if(pos.x() > .4 && pos.x() <.6){
+					s_ind = 1;
+				}
+				if (pos.x() > .6) {
+					s_ind = 2;
+				}
+				
             }
 			glfwPollEvents();
         }
