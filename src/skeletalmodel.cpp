@@ -185,6 +185,7 @@ Vector3f SkeletalModel::getPos(int joint) {
 }
 
 Vector3f SkeletalModel::getLocalPos(int ref_joint, int joint) {
+	updateCurrentJointToWorldTransforms();
 	return ((m_joints[joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz() - (m_joints[ref_joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz());
 }
 

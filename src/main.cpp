@@ -271,6 +271,15 @@ vector<Vector3f> getPath(){
     return path;
 }
 
+vector<Vector3f> getPath(Curve c) {
+	vector <Vector3f> path;
+	for (int j = 0; j < (int)c.size(); j++) {
+		Vector3f shifted = c[j].V;
+		path.push_back(shifted);
+	}
+	return path;
+}
+
 void initRendering()
 {
     // Clear to black
@@ -480,6 +489,7 @@ void freeSkeleton() {
 
 Vector3f goal_check_simple(Vector3f pos, Vector3f g, Vector3f goal, Vector3f og, float eps, bool & isog);			// Goal checking for simple two point oscilation
 Vector3f goal_check_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind);			// Goal checking for spline of points
+Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind);
 
 int main(int argc, char** argv)
 {
@@ -577,7 +587,7 @@ int main(int argc, char** argv)
 			Vector3f g_LH(init_LH.x(), init_LH.y(), init_LH.z() + .06);
 			Vector3f g_RSH(init_RSH.x(), init_RSH.y(), init_RSH.z() + .06);
 			Vector3f g_LSH(init_LSH.x(), init_LSH.y(), init_LSH.z() - .06);
-			Vector3f g_RHF(init_RHF.x(), init_RHF.y(), init_RHF.z() + .06);
+			Vector3f g_RHF(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() + .1);
 			Vector3f g_LHF(init_LHF.x(), init_LHF.y(), init_LHF.z() + .06);
 			
 
@@ -628,7 +638,7 @@ int main(int argc, char** argv)
 			vector<Vector3f>	gs = ogs;							    // Initialize the goals to the Original points
 			vector<Vector3f>	pos = ogs;								// Initialize the Positions of the end effectors to the Original point
 
-			float				eps = .02;					            // An epsilon to define what is accepted as a goal hit
+			float				eps = .01;					            // An epsilon to define what is accepted as a goal hit
 			uint16_t			count = 0;					            // A count to delay how many frames are rendered
 			vector<int>         point_inds;				                // The index of the current spline goal point
 			point_inds.push_back(0);
@@ -651,7 +661,12 @@ int main(int argc, char** argv)
 				// If it is then swap the goal point
 				//g = goal_check_simple(pos, g, goal, og, eps, isog);
 				for (int i = 0; i < num_end_effectors; i++) {
-					gs[i] = goal_check_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i]);
+					if (i < 6) {
+						gs[i] = goal_check_leg_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i]);
+					}
+					else {
+						gs[i] = goal_check_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i]);
+					}
 					cout << "gs " << i << ": " << endl;
 					gs[i].print();
 					pos[i].print();
@@ -671,7 +686,7 @@ int main(int argc, char** argv)
 					J_ps.push_back(Jacobians[i].transposed());
 				}
 
-				float rate = .01;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
+				float rate = .05;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
 				for (int i = 0; i < num_end_effectors; i++) {
 					Vector3f e = (gs[i] - pos[i]).normalized()*rate;		// Step vector in coordinate space
 					Vector3f thetas = J_ps[i]*e;						// Step vector in joint space
@@ -689,10 +704,12 @@ int main(int argc, char** argv)
 						skeleton->setJointTransform(12, 0, 0, thetas.x());
 					}
 					else if (i == 2) { // DoF of right hip
-						skeleton->setJointTransform(4, 0, thetas.z(), 0);
+						//skeleton->setJointTransform(8, 0, thetas.z(), 0);
+						//skeleton->setJointTransform(9, 0, -thetas.z(), 0);
 					}
 					else if (i == 3) { // Dof of left hip
-						skeleton->setJointTransform(8, 0, thetas.z(), 0);
+						//skeleton->setJointTransform(4, 0, thetas.z(), 0);
+						//skeleton->setJointTransform(5, 0, -thetas.z(), 0);
 					}
 					else if (i == 4) { // Dof of right Hand
 						skeleton->setJointTransform(16, thetas.x(), 0, 0);
@@ -711,7 +728,7 @@ int main(int argc, char** argv)
 				}
 
 				count++;
-				if (count > 50) {
+				if (count > 10) {
 					//cout << speed[1] << endl;
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					glEnable(GL_DEPTH_TEST);
@@ -838,6 +855,19 @@ Vector3f goal_check_simple(Vector3f pos, Vector3f g, Vector3f goal, Vector3f og,
 
 Vector3f goal_check_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind) {
 	if ((g - pos).abs() < eps) {
+		if (++ind < path.size()) {
+			g = path[ind];
+		}
+		else {
+			ind = 0;
+			g = path[ind];
+		}
+	}
+	return g;
+}
+
+Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind) {
+	if ((g.yz() - pos.yz()).abs() < eps) {
 		if (++ind < path.size()) {
 			g = path[ind];
 		}
