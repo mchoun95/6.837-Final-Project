@@ -49,7 +49,12 @@ public:
 	std::vector<Matrix3f> getJacobians();
     Matrix3f getJacobian();
     Vector3f perturbSystem(int jointIndex, float rZ);
+	Vector3f perturbSystem(int jointIndex, float rZ, int this_joint);
+	Vector3f perturbSystem(int jointIndex, float rY, float rZ, int this_joint);
+	Vector3f perturbSystem(int jointIndex, float rX, float rY, float rZ, int this_joint, int ref_joint);
 	Vector3f getPos();
+	Vector3f getPos(int joint);
+	Vector3f getLocalPos(int ref_joint, int joint);
     // Part 2: Skeletal Subspace Deformation
 
     // 2.3. Implement SSD

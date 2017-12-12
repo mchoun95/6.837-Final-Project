@@ -180,6 +180,14 @@ Vector3f SkeletalModel::getPos() {
 	return (m_joints[4]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
 }
 
+Vector3f SkeletalModel::getPos(int joint) {
+	return (m_joints[joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+}
+
+Vector3f SkeletalModel::getLocalPos(int ref_joint, int joint) {
+	return ((m_joints[joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz() - (m_joints[ref_joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz());
+}
+
 std::vector<Matrix3f> SkeletalModel::getJacobians() {
 	std::vector<Matrix3f> Jacobians;
 	
@@ -212,15 +220,15 @@ std::vector<Matrix3f> SkeletalModel::getJacobians() {
 	Matrix4f R_Hip_WS                           = m_joints[9]->currentJointToWorldTransform;
 	Matrix4f L_Hip_WS                           = m_joints[5]->currentJointToWorldTransform;
 
-	Matrix4f R_Hand_RSS;
-	Matrix4f L_Hand_LSS;
+	Matrix4f R_Hand_WS							= m_joints[17]->currentJointToWorldTransform;
+	Matrix4f L_Hand_WS							= m_joints[14]->currentJointToWorldTransform;
 
-	Matrix4f R_Foot_RHS;
-	Matrix4f L_Foot_LHS;
+	Matrix4f R_Foot_WS							= m_joints[11]->currentJointToWorldTransform;
+	Matrix4f L_Foot_WS							= m_joints[7]->currentJointToWorldTransform;
 	
 	//Right Shoulder Jacobian Construction
 	P_R_Shoulder                                = (R_Shoulder_WS*Vector4f(0,0,0,1)).xyz();
-	Vector3f P_1n = (perturbSystem(15, dt) - P_R_Shoulder) / dt;
+	Vector3f P_1n = (perturbSystem(15, dt, 16) - P_R_Shoulder) / dt;
 	J_R_Shoulder = Matrix3f(P_1n.x(), 0.0f, 0.0f,
 							P_1n.y(), 0.0f, 0.0f,
 							P_1n.z(), 0.0f, 0.0f);
@@ -228,30 +236,67 @@ std::vector<Matrix3f> SkeletalModel::getJacobians() {
 
 	// Left Shoulder Jacobian Construction
 	P_L_Shoulder                                = (L_Shoulder_WS*Vector4f(0, 0, 0, 1)).xyz();
-	P_1n = (perturbSystem(12, dt) - P_L_Shoulder) / dt;
-	J_L_Shoulder = Matrix3f(P_1n.x(), 0.0f, 0.0f,
-							P_1n.y(), 0.0f, 0.0f,
-							P_1n.z(), 0.0f, 0.0f);
+	Vector3f P_Ln = (perturbSystem(12, dt, 13) - P_L_Shoulder) / dt;
+	J_L_Shoulder = Matrix3f(P_Ln.x(), 0.0f, 0.0f,
+							P_Ln.y(), 0.0f, 0.0f,
+							P_Ln.z(), 0.0f, 0.0f);
 	Jacobians.push_back(J_L_Shoulder);
-
-
-	P_R_Hand;
-	P_L_Hand;
 	
 	// Right Hip Jacobian Construction
 	P_R_Hip                                     = (R_Hip_WS*Vector4f(0, 0, 0, 1)).xyz();
-	P_1n = (perturbSystem(12, dt) - P_R_Hip) / dt;
-	Vector3f P_2n = (perturbSystem(15, dt) - P_R_Hip) / dt;
-	Vector3f P_3n = (perturbSystem(15, dt) - P_R_Hip) / dt;
+	P_1n = (perturbSystem(1, dt, 0, 9) - P_R_Hip) / dt;
+	Vector3f P_2n = (perturbSystem(2, dt, 0, 9) - P_R_Hip) / dt;
+	Vector3f P_3n = (perturbSystem(8, dt, 0, 9) - P_R_Hip) / dt;
 	J_R_Hip = Matrix3f(P_1n.x(), P_2n.x(), P_3n.x(),
-							P_1n.y(), P_2n.y(), P_3n.y(),
-							P_1n.z(), P_2n.z(), P_3n.z());
+					   P_1n.y(), P_2n.y(), P_3n.y(),
+					   P_1n.z(), P_2n.z(), P_3n.z());
 
-	Jacobians.push_back(J_L_Shoulder);
+	Jacobians.push_back(J_R_Hip);
+
 	P_L_Hip										= (L_Hip_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(1, dt, 0, 5) - P_L_Hip) / dt;
+	P_2n = (perturbSystem(2, dt, 0, 5) - P_L_Hip) / dt;
+	P_3n = (perturbSystem(4, dt, 0, 5) - P_L_Hip) / dt;
+	J_L_Hip = Matrix3f(P_1n.x(), P_2n.x(), P_3n.x(),
+				       P_1n.y(), P_2n.y(), P_3n.y(),
+					   P_1n.z(), P_2n.z(), P_3n.z());
+
+	Jacobians.push_back(J_L_Hip);
 	
-	P_R_Foot;
-	P_L_Foot; 
+	P_R_Hand                                    = (R_Hand_WS*Vector4f(0, 0, 0, 1)).xyz() - (R_Shoulder_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(16, dt, 0, 0, 17, 16) - P_R_Hand) / dt;
+	J_R_Hand = Matrix3f(P_1n.x(), 0.0f, 0.0f,
+						P_1n.y(), 0.0f, 0.0f,
+						P_1n.z(), 0.0f, 0.0f);
+
+	Jacobians.push_back(J_R_Hand);
+
+	P_L_Hand									= (L_Hand_WS*Vector4f(0, 0, 0, 1)).xyz() - (L_Shoulder_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(13, dt, 0, 0, 14, 13) - P_L_Hand) / dt;
+	J_L_Hand = Matrix3f(P_1n.x(), 0.0f, 0.0f,
+		P_1n.y(), 0.0f, 0.0f,
+		P_1n.z(), 0.0f, 0.0f);
+
+	Jacobians.push_back(J_L_Hand);
+
+	P_R_Foot									= (R_Foot_WS*Vector4f(0, 0, 0, 1)).xyz() - (R_Hip_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(9, dt, 0, 0, 11, 9) - P_R_Foot) / dt;
+	P_2n = (perturbSystem(10, dt, 0, 0, 11, 9) - P_R_Foot) / dt;
+	J_R_Foot = Matrix3f(P_1n.x(), P_2n.x(), 0.0f,
+						P_1n.y(), P_2n.y(), 0.0f,
+						P_1n.z(), P_2n.z(), 0.0f);
+
+	Jacobians.push_back(J_R_Foot);
+
+	P_L_Foot									= (L_Foot_WS*Vector4f(0, 0, 0, 1)).xyz() - (L_Hip_WS*Vector4f(0, 0, 0, 1)).xyz();
+	P_1n = (perturbSystem(5, dt, 0, 0, 7, 5) - P_L_Foot) / dt;
+	P_2n = (perturbSystem(6, dt, 0, 0, 7, 5) - P_L_Foot) / dt;
+	J_L_Foot = Matrix3f(P_1n.x(), P_2n.x(), 0.0f,
+						P_1n.y(), P_2n.y(), 0.0f,
+						P_1n.z(), P_2n.z(), 0.0f);
+
+	Jacobians.push_back(J_L_Foot);
+
 	/*Vector3f P_1n = (perturbSystem(1, dt1) - P) / dt1;
 	Vector3f P_2n = (perturbSystem(2, dt2) - P) / dt2;
 
@@ -295,6 +340,51 @@ Vector3f SkeletalModel::perturbSystem(int jointIndex, float rZ){
 	// m_joints[jointIndex]->transform =  rotz;
 
     return P;
+}
+
+Vector3f SkeletalModel::perturbSystem(int jointIndex, float rZ, int this_joint) {
+	Matrix4f M = Matrix4f::translation(m_joints[jointIndex]->transform.getCol(3).xyz());
+	Matrix4f rotz = Matrix4f::rotateZ(rZ);
+	Matrix4f irotz = Matrix4f::rotateZ(-rZ);
+	m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*rotz;
+	Vector3f P;
+	updateCurrentJointToWorldTransforms();
+	P = (m_joints[this_joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+	m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*irotz;
+	updateCurrentJointToWorldTransforms();
+	// m_joints[jointIndex]->transform =  rotz;
+
+	return P;
+}
+
+Vector3f SkeletalModel::perturbSystem(int jointIndex, float rY, float rZ, int this_joint) {
+	Matrix4f M = Matrix4f::translation(m_joints[jointIndex]->transform.getCol(3).xyz());
+	Matrix4f rotz = Matrix4f::rotateY(rY);
+	Matrix4f irotz = Matrix4f::rotateY(-rY);
+	m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*rotz;
+	Vector3f P;
+	updateCurrentJointToWorldTransforms();
+	P = (m_joints[this_joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+	m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*irotz;
+	updateCurrentJointToWorldTransforms();
+	// m_joints[jointIndex]->transform =  rotz;
+
+	return P;
+}
+
+Vector3f SkeletalModel::perturbSystem(int jointIndex, float rX, float rY, float rZ, int this_joint, int ref_joint) {
+	Matrix4f M = Matrix4f::translation(m_joints[jointIndex]->transform.getCol(3).xyz());
+	Matrix4f rotz = Matrix4f::rotateX(rX);
+	Matrix4f irotz = Matrix4f::rotateX(-rX);
+	m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*rotz;
+	Vector3f P;
+	updateCurrentJointToWorldTransforms();
+	P = (m_joints[this_joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz() - (m_joints[ref_joint]->currentJointToWorldTransform*Vector4f(0, 0, 0, 1)).xyz();
+	m_joints[jointIndex]->transform = m_joints[jointIndex]->transform*irotz;
+	updateCurrentJointToWorldTransforms();
+	// m_joints[jointIndex]->transform =  rotz;
+
+	return P;
 }
 
 void SkeletalModel::drawSkeleton(const Camera& camera)

@@ -17,6 +17,9 @@
 #include "skeletalmodel.h"
 #include "curve.h"
 
+#define SKELETON_IK true
+
+
 using namespace std;
 // Note: using namespace nanogui not possible due to naming conflicts
 namespace ng = ::nanogui;
@@ -494,6 +497,7 @@ int main(int argc, char** argv)
     int steps = 10;
     gCurves.push_back(evalBezier(curve1, steps));
     vector<Vector3f> path = getPath();
+	vector<vector<Vector3f>> paths;						//for skeleton
     // cout << gCurves[0].size() << "size" <<endl;
     /////////////
     if (argc < 2)
@@ -543,83 +547,267 @@ int main(int argc, char** argv)
 		// path.push_back(g2);
 		// path.push_back(g3);
 		// path.push_back(g4);
-
-		Vector3f	goal							  (.3, .25, .5);		// A Desired Goal Point
-        Vector3f	og							      (.7, .25, .5);		// The Original point
-        Vector3f	g								= og;				    // Initialize the goal to the Original point
-		Vector3f	pos								= og;					// Initialize the Position of the end effector to the Original point
-
-		bool		isog							= true;					// Boolean to check if the end effector has hit it's goal
-		float		eps								= .02;					// An epsilon to define what is accepted as a goal hit
-        uint16_t	count							= 0;					// A count to delay how many frames are rendered
-		int         point_ind                       = 0;					// The index of the current spline goal point
-
-		vector<int> speed;
-		int         s_ind							= 0;
-
-		//test speed profile
-		speed.push_back(3);
-		speed.push_back(5);
-		speed.push_back(10);
-		speed.push_back(20);
+		if (SKELETON_IK) {
+			int num_end_effectors = 8;									// [R_Shoulder, L_Shoulder, R_Hip, L_Hip, R_Hand, L_Hand, R_Foot, L_Foot]
+			vector<int> end_effectors;
+			end_effectors.push_back(16);
+			end_effectors.push_back(13);
+			end_effectors.push_back(9);
+			end_effectors.push_back(5);
+			end_effectors.push_back(17);
+			end_effectors.push_back(14);
+			end_effectors.push_back(11);
+			end_effectors.push_back(7);
 
 
-		while (1) {
-			// Goal checking
-			// Check if the end effector is close to the goal
-			// If it is then swap the goal point
-			//g = goal_check_simple(pos, g, goal, og, eps, isog);
-			g = goal_check_spline(pos, g, path, og, eps, point_ind);
+			// initial end effector locations
+			Vector3f init_RS = skeleton->getPos(end_effectors[0]);
+			Vector3f init_LS = skeleton->getPos(end_effectors[1]);
+			Vector3f init_RH = skeleton->getPos(end_effectors[2]);
+			Vector3f init_LH = skeleton->getPos(end_effectors[3]);
+			Vector3f init_RSH = skeleton->getLocalPos(end_effectors[0], end_effectors[4]);
+			Vector3f init_LSH = skeleton->getLocalPos(end_effectors[1], end_effectors[5]);
+			Vector3f init_RHF = skeleton->getLocalPos(end_effectors[2], end_effectors[6]);
+			Vector3f init_LHF = skeleton->getLocalPos(end_effectors[3], end_effectors[7]);
 
-			//compute J
-			Matrix3f J = skeleton->getJacobian();
+			// end effector goals
+			Vector3f g_RS(init_RS.x(), init_RS.y()+.06, init_RS.z());
+			Vector3f g_LS(init_LS.x(), init_LS.y()+.06, init_LS.z());
+			Vector3f g_RH(init_RH.x(), init_RH.y(), init_RH.z() - .06);
+			Vector3f g_LH(init_LH.x(), init_LH.y(), init_LH.z() + .06);
+			Vector3f g_RSH(init_RSH.x(), init_RSH.y(), init_RSH.z() + .06);
+			Vector3f g_LSH(init_LSH.x(), init_LSH.y(), init_LSH.z() - .06);
+			Vector3f g_RHF(init_RHF.x(), init_RHF.y(), init_RHF.z() + .06);
+			Vector3f g_LHF(init_LHF.x(), init_LHF.y(), init_LHF.z() + .06);
+			
 
-			//compute J+
-            Matrix2f J_temp = J.getSubmatrix2x2(0,0);
-            J_temp = (J_temp.transposed()*J_temp).inverse()*J_temp.transposed();
-            Matrix3f J_p = Matrix3f();
-            J_p.setSubmatrix2x2(0, 0, J_temp);
+			// end effector paths
+			vector<Vector3f> p_RS;
+			p_RS.push_back(init_RS);
+			p_RS.push_back(g_RS);
+			vector<Vector3f> p_LS;
+			p_LS.push_back(init_LS);
+			p_LS.push_back(g_LS);
+			vector<Vector3f> p_RH;
+			p_RH.push_back(init_RH);
+			p_RH.push_back(g_RH);
+			vector<Vector3f> p_LH;
+			p_LH.push_back(init_LH);
+			p_LH.push_back(g_LH);
+			vector<Vector3f> p_RSH;
+			p_RSH.push_back(init_RSH);
+			p_RSH.push_back(g_RSH);
+			vector<Vector3f> p_LSH;
+			p_LSH.push_back(init_LSH);
+			p_LSH.push_back(g_LSH);
+			vector<Vector3f> p_RHF;
+			p_RHF.push_back(init_RHF);
+			p_RHF.push_back(g_RHF);
+			vector<Vector3f> p_LHF;
+			p_LHF.push_back(init_LHF);
+			p_LHF.push_back(g_LHF);
 
-            float rate = .001;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
-			Vector3f e = (g - pos).normalized()*rate;		// Step vector in coordinate space
-            Vector3f thetas = J_p*e;						// Step vector in joint space
+			paths.push_back(p_RS);
+			paths.push_back(p_LS);
+			paths.push_back(p_RH);
+			paths.push_back(p_LH);
+			paths.push_back(p_RSH);
+			paths.push_back(p_LSH);
+			paths.push_back(p_RHF);
+			paths.push_back(p_LHF);
+
+			vector<Vector3f>	ogs;									// The Original locations of joints
+			ogs.push_back(init_RS);
+			ogs.push_back(init_LS);
+			ogs.push_back(init_RH);
+			ogs.push_back(init_LH);
+			ogs.push_back(init_RSH);
+			ogs.push_back(init_LSH);
+			ogs.push_back(init_RHF);
+			ogs.push_back(init_LHF);
+			vector<Vector3f>	gs = ogs;							    // Initialize the goals to the Original points
+			vector<Vector3f>	pos = ogs;								// Initialize the Positions of the end effectors to the Original point
+
+			float				eps = .02;					            // An epsilon to define what is accepted as a goal hit
+			uint16_t			count = 0;					            // A count to delay how many frames are rendered
+			vector<int>         point_inds;				                // The index of the current spline goal point
+			point_inds.push_back(0);
+			point_inds.push_back(0);
+			point_inds.push_back(0);
+			point_inds.push_back(0);
+			point_inds.push_back(0);
+			point_inds.push_back(0);
+			point_inds.push_back(0);
+			point_inds.push_back(0);
 
 
-			pos = skeleton->getPos();
-			skeleton->setJointTransform(1, 0, 0, thetas.x());
-			skeleton->setJointTransform(2, 0, 0, thetas.y());
+			vector<vector<int>> speeds;
+			vector<int>         s_inds;
 
 
-			count++;
-			if(count > 10){
-				//cout << speed[1] << endl;
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				glEnable(GL_DEPTH_TEST);
-				setViewport(window);
-				if (gDrawAxisAlways || gMousePressed) {
-					drawAxis();
-                    drawPoints();
-                    drawCurve();
+			while (1) {
+				// Goal checking
+				// Check if the end effector is close to the goal
+				// If it is then swap the goal point
+				//g = goal_check_simple(pos, g, goal, og, eps, isog);
+				for (int i = 0; i < num_end_effectors; i++) {
+					gs[i] = goal_check_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i]);
+					cout << "gs " << i << ": " << endl;
+					gs[i].print();
+					pos[i].print();
 				}
-				skeleton->draw(camera, gDrawSkeleton);
-				glfwSwapBuffers(window);
-                count = 0;
-				if (pos.x() < .4) {
-					s_ind = 0;
-				}
-				if(pos.x() > .4 && pos.x() <.5){
-					s_ind = 1;
-				}
-				if (pos.x() > .5 && pos.x() <.6) {
-					s_ind = 2;
-				}
-				if (pos.x() > .6) {
-					s_ind = 3;
-				}
+				//compute J
+				vector<Matrix3f> Jacobians = skeleton->getJacobians();
+
+				//compute J+
+				/*Matrix2f J_temp = J.getSubmatrix2x2(0, 0);
+				J_temp = (J_temp.transposed()*J_temp).inverse()*J_temp.transposed();
+				Matrix3f J_p = Matrix3f();
+				J_p.setSubmatrix2x2(0, 0, J_temp);*/
+				//Just do transpose for now
 				
-            }
-			glfwPollEvents();
-        }
+				vector<Matrix3f> J_ps;
+				for (int i = 0; i < num_end_effectors; i++) {
+					J_ps.push_back(Jacobians[i].transposed());
+				}
+
+				float rate = .01;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
+				for (int i = 0; i < num_end_effectors; i++) {
+					Vector3f e = (gs[i] - pos[i]).normalized()*rate;		// Step vector in coordinate space
+					Vector3f thetas = J_ps[i]*e;						// Step vector in joint space
+					
+					if (i < 4) {
+						pos[i] = skeleton->getPos(end_effectors[i]);
+					}
+					else {
+						pos[i] = skeleton->getLocalPos(end_effectors[i-4], end_effectors[i]);
+					}
+					if (i == 0) {		// DoF of right shoulder
+						skeleton->setJointTransform(15, 0, 0, thetas.x());
+					}
+					else if (i == 1) {	// DoF of left shoulder
+						skeleton->setJointTransform(12, 0, 0, thetas.x());
+					}
+					else if (i == 2) { // DoF of right hip
+						skeleton->setJointTransform(4, 0, thetas.z(), 0);
+					}
+					else if (i == 3) { // Dof of left hip
+						skeleton->setJointTransform(8, 0, thetas.z(), 0);
+					}
+					else if (i == 4) { // Dof of right Hand
+						skeleton->setJointTransform(16, thetas.x(), 0, 0);
+					}
+					else if (i == 5) { // Dof of left Hand
+						skeleton->setJointTransform(13, thetas.x(), 0, 0);
+					}
+					else if (i == 6) { // Dof of right Foot
+						skeleton->setJointTransform(9, thetas.x(), 0, 0);
+						skeleton->setJointTransform(10, thetas.y(), 0, 0);
+					}
+					else if (i == 7) { // Dof of left Foot
+						skeleton->setJointTransform(5, thetas.x(), 0, 0);
+						skeleton->setJointTransform(6, thetas.y(), 0, 0);
+					}
+				}
+
+				count++;
+				if (count > 50) {
+					//cout << speed[1] << endl;
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+					glEnable(GL_DEPTH_TEST);
+					setViewport(window);
+					if (gDrawAxisAlways || gMousePressed) {
+						drawAxis();
+						drawPoints();
+						drawCurve();
+					}
+					skeleton->draw(camera, gDrawSkeleton);
+					glfwSwapBuffers(window);
+					count = 0;
+
+				}
+				glfwPollEvents();
+			}
+		}
+		else {
+
+			Vector3f	goal(.3, .25, .5);		// A Desired Goal Point
+			Vector3f	og(.7, .25, .5);		// The Original point
+			Vector3f	g = og;				    // Initialize the goal to the Original point
+			Vector3f	pos = og;					// Initialize the Position of the end effector to the Original point
+
+			bool		isog = true;					// Boolean to check if the end effector has hit it's goal
+			float		eps = .02;					// An epsilon to define what is accepted as a goal hit
+			uint16_t	count = 0;					// A count to delay how many frames are rendered
+			int         point_ind = 0;					// The index of the current spline goal point
+
+			vector<int> speed;
+			int         s_ind = 0;
+
+			//test speed profile
+			speed.push_back(3);
+			speed.push_back(5);
+			speed.push_back(10);
+			speed.push_back(20);
+
+
+			while (1) {
+				// Goal checking
+				// Check if the end effector is close to the goal
+				// If it is then swap the goal point
+				//g = goal_check_simple(pos, g, goal, og, eps, isog);
+				g = goal_check_spline(pos, g, path, og, eps, point_ind);
+
+				//compute J
+				Matrix3f J = skeleton->getJacobian();
+
+				//compute J+
+				Matrix2f J_temp = J.getSubmatrix2x2(0, 0);
+				J_temp = (J_temp.transposed()*J_temp).inverse()*J_temp.transposed();
+				Matrix3f J_p = Matrix3f();
+				J_p.setSubmatrix2x2(0, 0, J_temp);
+
+				float rate = .001;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
+				Vector3f e = (g - pos).normalized()*rate;		// Step vector in coordinate space
+				Vector3f thetas = J_p*e;						// Step vector in joint space
+
+
+				pos = skeleton->getPos();
+				skeleton->setJointTransform(1, 0, 0, thetas.x());
+				skeleton->setJointTransform(2, 0, 0, thetas.y());
+
+
+				count++;
+				if (count > speed[s_ind]) {
+					//cout << speed[1] << endl;
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+					glEnable(GL_DEPTH_TEST);
+					setViewport(window);
+					if (gDrawAxisAlways || gMousePressed) {
+						drawAxis();
+						drawPoints();
+						drawCurve();
+					}
+					skeleton->draw(camera, gDrawSkeleton);
+					glfwSwapBuffers(window);
+					count = 0;
+					if (pos.x() < .4) {
+						s_ind = 0;
+					}
+					if (pos.x() > .4 && pos.x() < .5) {
+						s_ind = 1;
+					}
+					if (pos.x() > .5 && pos.x() < .6) {
+						s_ind = 2;
+					}
+					if (pos.x() > .6) {
+						s_ind = 3;
+					}
+
+				}
+				glfwPollEvents();
+			}
+		}
         // Check if any input happened during the last frame
         glfwPollEvents();
     }
