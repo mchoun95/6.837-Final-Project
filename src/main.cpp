@@ -581,12 +581,12 @@ int main(int argc, char** argv)
 			Vector3f init_LHF = skeleton->getLocalPos(end_effectors[3], end_effectors[7]);
 
 			// end effector goals
-			Vector3f g_RS(init_RS.x(), init_RS.y()+.06, init_RS.z());
-			Vector3f g_LS(init_LS.x(), init_LS.y()+.06, init_LS.z());
+			Vector3f g_RS(init_RS.x(), init_RS.y()+.14, init_RS.z());
+			Vector3f g_LS(init_LS.x(), init_LS.y()+.14, init_LS.z());
 			Vector3f g_RH(init_RH.x(), init_RH.y(), init_RH.z() - .06);
 			Vector3f g_LH(init_LH.x(), init_LH.y(), init_LH.z() + .06);
-			Vector3f g_RSH(init_RSH.x(), init_RSH.y(), init_RSH.z() + .06);
-			Vector3f g_LSH(init_LSH.x(), init_LSH.y(), init_LSH.z() - .06);
+			Vector3f g_RSH(init_RSH.x(), init_RSH.y(), init_RSH.z() + .16);
+			Vector3f g_LSH(init_LSH.x(), init_LSH.y(), init_LSH.z() - .16);
 			Vector3f g_RHF(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() + .1);
 			Vector3f g_LHF(init_LHF.x(), init_LHF.y(), init_LHF.z() + .06);
 			
@@ -663,10 +663,9 @@ int main(int argc, char** argv)
 			vector<Vector3f>	gs = ogs;							    // Initialize the goals to the Original points
 			vector<Vector3f>	pos = ogs;								// Initialize the Positions of the end effectors to the Original point
 
-			float				eps = .02;					            // An epsilon to define what is accepted as a goal hit
+			float				eps = .06;					            // An epsilon to define what is accepted as a goal hit
 			uint16_t			count = 0;					            // A count to delay how many frames are rendered
 			vector<int>         point_inds;				                // The index of the current spline goal point
-			point_inds.push_back(5);
 			point_inds.push_back(0);
 			point_inds.push_back(0);
 			point_inds.push_back(0);
@@ -674,6 +673,7 @@ int main(int argc, char** argv)
 			point_inds.push_back(0);
 			point_inds.push_back(0);
 			point_inds.push_back(0);
+			point_inds.push_back(10);
 
 
 			vector<vector<int>> speeds;
@@ -724,9 +724,11 @@ int main(int argc, char** argv)
 					}
 					if (i == 0) {		// DoF of right shoulder
 						skeleton->setJointTransform(15, 0, 0, thetas.x());
+						skeleton->setJointTransform(16, 0, 0, -thetas.x()/2.0);
 					}
 					else if (i == 1) {	// DoF of left shoulder
 						skeleton->setJointTransform(12, 0, 0, thetas.x());
+						skeleton->setJointTransform(13, 0, 0, -thetas.x()/2.0);
 					}
 					else if (i == 2) { // DoF of right hip
 						//skeleton->setJointTransform(8, 0, thetas.z(), 0);
