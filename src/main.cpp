@@ -590,6 +590,29 @@ int main(int argc, char** argv)
 			Vector3f g_RHF(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() + .1);
 			Vector3f g_LHF(init_LHF.x(), init_LHF.y(), init_LHF.z() + .06);
 			
+			// Bezier control points for motion curves
+			Vector3f R_Ft_C1(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() + .1);
+			Vector3f R_Ft_C2(init_RHF.x(), init_RHF.y() + .0, init_RHF.z() + .5);
+			Vector3f R_Ft_C3(init_RHF.x(), init_RHF.y() + .0, init_RHF.z() - .5);
+			Vector3f R_Ft_C4(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() - .1);
+
+			vector<Vector3f> R_Ft_C;
+			R_Ft_C.push_back(R_Ft_C1);
+			R_Ft_C.push_back(R_Ft_C2);
+			R_Ft_C.push_back(R_Ft_C3);
+			R_Ft_C.push_back(R_Ft_C4);
+
+			Vector3f L_Ft_C1(init_LHF.x(), init_LHF.y() + .06, init_LHF.z() + .1);
+			Vector3f L_Ft_C2(init_LHF.x(), init_LHF.y() + .0, init_LHF.z() + .5);
+			Vector3f L_Ft_C3(init_LHF.x(), init_LHF.y() + .0, init_LHF.z() - .5);
+			Vector3f L_Ft_C4(init_LHF.x(), init_LHF.y() + .06, init_LHF.z() - .1);
+
+			vector<Vector3f> L_Ft_C;
+			L_Ft_C.push_back(L_Ft_C1);
+			L_Ft_C.push_back(L_Ft_C2);
+			L_Ft_C.push_back(L_Ft_C3);
+			L_Ft_C.push_back(L_Ft_C4);
+
 
 			// end effector paths
 			vector<Vector3f> p_RS;
@@ -611,11 +634,13 @@ int main(int argc, char** argv)
 			p_LSH.push_back(init_LSH);
 			p_LSH.push_back(g_LSH);
 			vector<Vector3f> p_RHF;
-			p_RHF.push_back(init_RHF);
-			p_RHF.push_back(g_RHF);
+			//p_RHF.push_back(init_RHF);
+			//p_RHF.push_back(g_RHF);
+			p_RHF = getPath(evalBezier(R_Ft_C, 20));
 			vector<Vector3f> p_LHF;
-			p_LHF.push_back(init_LHF);
-			p_LHF.push_back(g_LHF);
+			//p_LHF.push_back(init_LHF);
+			//p_LHF.push_back(g_LHF);
+			p_LHF = getPath(evalBezier(L_Ft_C, 20));
 
 			paths.push_back(p_RS);
 			paths.push_back(p_LS);
@@ -638,10 +663,10 @@ int main(int argc, char** argv)
 			vector<Vector3f>	gs = ogs;							    // Initialize the goals to the Original points
 			vector<Vector3f>	pos = ogs;								// Initialize the Positions of the end effectors to the Original point
 
-			float				eps = .01;					            // An epsilon to define what is accepted as a goal hit
+			float				eps = .02;					            // An epsilon to define what is accepted as a goal hit
 			uint16_t			count = 0;					            // A count to delay how many frames are rendered
 			vector<int>         point_inds;				                // The index of the current spline goal point
-			point_inds.push_back(0);
+			point_inds.push_back(5);
 			point_inds.push_back(0);
 			point_inds.push_back(0);
 			point_inds.push_back(0);
@@ -683,10 +708,10 @@ int main(int argc, char** argv)
 				
 				vector<Matrix3f> J_ps;
 				for (int i = 0; i < num_end_effectors; i++) {
-					J_ps.push_back(Jacobians[i].transposed());
+						J_ps.push_back(Jacobians[i].transposed());
 				}
 
-				float rate = .05;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
+				float rate = .02;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
 				for (int i = 0; i < num_end_effectors; i++) {
 					Vector3f e = (gs[i] - pos[i]).normalized()*rate;		// Step vector in coordinate space
 					Vector3f thetas = J_ps[i]*e;						// Step vector in joint space
