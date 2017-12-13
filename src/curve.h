@@ -34,7 +34,7 @@ typedef std::vector< CurvePoint > Curve;
 // Assume number of control points properly specifies a piecewise
 // Bezier curve.  I.e., C.size() == 4 + 3*n, n=0,1,...
 Curve evalBezier( const std::vector< Vector3f >& P, unsigned steps );
-
+Curve evalBezier(const std::vector< Vector3f >& P, unsigned frame_cycle, std::vector<float> speed);
 // Bsplines only require that there are at least 4 control points.
 Curve evalBspline( const std::vector< Vector3f >& P, unsigned steps );
 

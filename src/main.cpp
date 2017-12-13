@@ -489,7 +489,7 @@ void freeSkeleton() {
 
 Vector3f goal_check_simple(Vector3f pos, Vector3f g, Vector3f goal, Vector3f og, float eps, bool & isog);			// Goal checking for simple two point oscilation
 Vector3f goal_check_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind);			// Goal checking for spline of points
-Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind);
+Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind, uint16_t & count);
 
 int main(int argc, char** argv)
 {
@@ -581,20 +581,20 @@ int main(int argc, char** argv)
 			Vector3f init_LHF = skeleton->getLocalPos(end_effectors[3], end_effectors[7]);
 
 			// end effector goals
-			Vector3f g_RS(init_RS.x(), init_RS.y()+.14, init_RS.z());
-			Vector3f g_LS(init_LS.x(), init_LS.y()+.14, init_LS.z());
+			Vector3f g_RS(init_RS.x(), init_RS.y()+.06, init_RS.z());
+			Vector3f g_LS(init_LS.x(), init_LS.y()+.06, init_LS.z());
 			Vector3f g_RH(init_RH.x(), init_RH.y(), init_RH.z() - .06);
 			Vector3f g_LH(init_LH.x(), init_LH.y(), init_LH.z() + .06);
 			Vector3f g_RSH(init_RSH.x(), init_RSH.y(), init_RSH.z() + .16);
 			Vector3f g_LSH(init_LSH.x(), init_LSH.y(), init_LSH.z() - .16);
-			Vector3f g_RHF(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() + .1);
-			Vector3f g_LHF(init_LHF.x(), init_LHF.y(), init_LHF.z() + .06);
+			Vector3f g_RHF(init_RHF.x(), init_RHF.y() + .15f, init_RHF.z() + .1f);
+			Vector3f g_LHF(init_LHF.x(), init_LHF.y() + .15f, init_LHF.z() + .1f);
 			
 			// Bezier control points for motion curves
-			Vector3f R_Ft_C1(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() + .1);
-			Vector3f R_Ft_C2(init_RHF.x(), init_RHF.y() + .0, init_RHF.z() + .5);
-			Vector3f R_Ft_C3(init_RHF.x(), init_RHF.y() + .0, init_RHF.z() - .5);
-			Vector3f R_Ft_C4(init_RHF.x(), init_RHF.y() + .06, init_RHF.z() - .1);
+			Vector3f R_Ft_C1(init_RHF.x(), init_RHF.y() + .15f, init_RHF.z() + .2f);
+			Vector3f R_Ft_C2(init_RHF.x(), init_RHF.y() - .1f, init_RHF.z() + .05f);
+			Vector3f R_Ft_C3(init_RHF.x(), init_RHF.y() + .2f, init_RHF.z() - .2f);
+			Vector3f R_Ft_C4(init_RHF.x(), init_RHF.y() + .15f, init_RHF.z() - .3f);
 
 			vector<Vector3f> R_Ft_C;
 			R_Ft_C.push_back(R_Ft_C1);
@@ -602,10 +602,10 @@ int main(int argc, char** argv)
 			R_Ft_C.push_back(R_Ft_C3);
 			R_Ft_C.push_back(R_Ft_C4);
 
-			Vector3f L_Ft_C1(init_LHF.x(), init_LHF.y() + .06, init_LHF.z() + .1);
-			Vector3f L_Ft_C2(init_LHF.x(), init_LHF.y() + .0, init_LHF.z() + .5);
-			Vector3f L_Ft_C3(init_LHF.x(), init_LHF.y() + .0, init_LHF.z() - .5);
-			Vector3f L_Ft_C4(init_LHF.x(), init_LHF.y() + .06, init_LHF.z() - .1);
+			Vector3f L_Ft_C1(init_LHF.x(), init_LHF.y() + .15f, init_LHF.z() + .2f);
+			Vector3f L_Ft_C2(init_LHF.x(), init_LHF.y() - .1f, init_LHF.z() + .05f);
+			Vector3f L_Ft_C3(init_LHF.x(), init_LHF.y() + .2f, init_LHF.z() - .2f);
+			Vector3f L_Ft_C4(init_LHF.x(), init_LHF.y() + .15f, init_LHF.z() - .25f);
 
 			vector<Vector3f> L_Ft_C;
 			L_Ft_C.push_back(L_Ft_C1);
@@ -636,11 +636,19 @@ int main(int argc, char** argv)
 			vector<Vector3f> p_RHF;
 			//p_RHF.push_back(init_RHF);
 			//p_RHF.push_back(g_RHF);
-			p_RHF = getPath(evalBezier(R_Ft_C, 20));
+			vector<float> R_HF_speed;
+			for (int i = 1; i < 10000; i++) {
+				R_HF_speed.push_back(.01);
+			}
+			p_RHF = getPath(evalBezier(R_Ft_C, 20, R_HF_speed));
 			vector<Vector3f> p_LHF;
 			//p_LHF.push_back(init_LHF);
 			//p_LHF.push_back(g_LHF);
-			p_LHF = getPath(evalBezier(L_Ft_C, 20));
+			vector<float> L_HF_speed;
+			for (int i = 1; i < 10000; i++) {
+				L_HF_speed.push_back(.01);
+			}
+			p_LHF = getPath(evalBezier(L_Ft_C, 20, L_HF_speed));
 
 			paths.push_back(p_RS);
 			paths.push_back(p_LS);
@@ -663,7 +671,7 @@ int main(int argc, char** argv)
 			vector<Vector3f>	gs = ogs;							    // Initialize the goals to the Original points
 			vector<Vector3f>	pos = ogs;								// Initialize the Positions of the end effectors to the Original point
 
-			float				eps = .06;					            // An epsilon to define what is accepted as a goal hit
+			float				eps = .02;					            // An epsilon to define what is accepted as a goal hit
 			uint16_t			count = 0;					            // A count to delay how many frames are rendered
 			vector<int>         point_inds;				                // The index of the current spline goal point
 			point_inds.push_back(0);
@@ -673,7 +681,7 @@ int main(int argc, char** argv)
 			point_inds.push_back(0);
 			point_inds.push_back(0);
 			point_inds.push_back(0);
-			point_inds.push_back(10);
+			point_inds.push_back(0);
 
 
 			vector<vector<int>> speeds;
@@ -686,15 +694,15 @@ int main(int argc, char** argv)
 				// If it is then swap the goal point
 				//g = goal_check_simple(pos, g, goal, og, eps, isog);
 				for (int i = 0; i < num_end_effectors; i++) {
-					if (i < 6) {
-						gs[i] = goal_check_leg_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i]);
+					if (i >= 6) {
+						gs[i] = goal_check_leg_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i], count);
 					}
 					else {
 						gs[i] = goal_check_spline(pos[i], gs[i], paths[i], ogs[i], eps, point_inds[i]);
 					}
-					cout << "gs " << i << ": " << endl;
+					/*cout << "gs " << i << ": " << endl;
 					gs[i].print();
-					pos[i].print();
+					pos[i].print();*/
 				}
 				//compute J
 				vector<Matrix3f> Jacobians = skeleton->getJacobians();
@@ -708,10 +716,30 @@ int main(int argc, char** argv)
 				
 				vector<Matrix3f> J_ps;
 				for (int i = 0; i < num_end_effectors; i++) {
+					if (i >= 6) {
+						Matrix2f J_temp = Jacobians[i].getSubmatrix2x2(1, 0);
+						J_temp = (J_temp.transposed()*J_temp).inverse();
+						Matrix3f J_p = Matrix3f();
+						J_p.setSubmatrix2x2(1, 0, J_temp);
+						J_p = J_p*Jacobians[i].transposed();
+						J_ps.push_back(J_p);
+					}
+					else if (i < 1) {
+						Matrix2f J_temp = Jacobians[i].getSubmatrix2x2(0, 0);
+						J_temp = (J_temp.transposed()*J_temp);
+						J_temp.print();
+						Matrix3f J_p = Matrix3f();
+						J_p(0,0)  = J_temp(0, 0);
+						J_p = Jacobians[i].transposed();
+						J_p.print();
+						J_ps.push_back(J_p);
+					}
+					else {
 						J_ps.push_back(Jacobians[i].transposed());
+					}
 				}
 
-				float rate = .02;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
+				float rate = .005;								// Set the spatial step size toward goal point. Should be small to minimize jacobian integration error
 				for (int i = 0; i < num_end_effectors; i++) {
 					Vector3f e = (gs[i] - pos[i]).normalized()*rate;		// Step vector in coordinate space
 					Vector3f thetas = J_ps[i]*e;						// Step vector in joint space
@@ -724,11 +752,9 @@ int main(int argc, char** argv)
 					}
 					if (i == 0) {		// DoF of right shoulder
 						skeleton->setJointTransform(15, 0, 0, thetas.x());
-						skeleton->setJointTransform(16, 0, 0, -thetas.x()/2.0);
 					}
 					else if (i == 1) {	// DoF of left shoulder
 						skeleton->setJointTransform(12, 0, 0, thetas.x());
-						skeleton->setJointTransform(13, 0, 0, -thetas.x()/2.0);
 					}
 					else if (i == 2) { // DoF of right hip
 						//skeleton->setJointTransform(8, 0, thetas.z(), 0);
@@ -745,17 +771,17 @@ int main(int argc, char** argv)
 						skeleton->setJointTransform(13, thetas.x(), 0, 0);
 					}
 					else if (i == 6) { // Dof of right Foot
-						skeleton->setJointTransform(9, thetas.x(), 0, 0);
-						skeleton->setJointTransform(10, thetas.y(), 0, 0);
+						skeleton->setJointTransform(9, thetas.y(), 0, 0);
+						skeleton->setJointTransform(10, thetas.z(), 0, 0);
 					}
 					else if (i == 7) { // Dof of left Foot
-						skeleton->setJointTransform(5, thetas.x(), 0, 0);
-						skeleton->setJointTransform(6, thetas.y(), 0, 0);
+						skeleton->setJointTransform(5, thetas.y(), 0, 0);
+						skeleton->setJointTransform(6, thetas.z(), 0, 0);
 					}
 				}
 
 				count++;
-				if (count > 10) {
+				if (count > 0) {
 					//cout << speed[1] << endl;
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					glEnable(GL_DEPTH_TEST);
@@ -893,7 +919,7 @@ Vector3f goal_check_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vect
 	return g;
 }
 
-Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind) {
+Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, Vector3f og, float eps, int & ind, uint16_t & count) {
 	if ((g.yz() - pos.yz()).abs() < eps) {
 		if (++ind < path.size()) {
 			g = path[ind];
@@ -902,6 +928,7 @@ Vector3f goal_check_leg_spline(Vector3f pos, Vector3f g, vector<Vector3f> path, 
 			ind = 0;
 			g = path[ind];
 		}
+		
 	}
 	return g;
 }

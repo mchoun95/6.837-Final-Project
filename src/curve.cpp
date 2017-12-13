@@ -124,6 +124,107 @@ Curve evalBezier(const vector< Vector3f >& P, unsigned steps)
 	return R;
 }
 
+Curve evalBezier(const vector< Vector3f >& P, unsigned frame_cycle, vector<float> speed)
+{
+	// Check
+	// cerr << "evalBezier must be called with 3n+1 control points." << endl;
+	if (P.size() < 4 || P.size() % 3 != 1)
+	{
+		cerr << "evalBezier must be called with 3n+1 control points." << endl;
+		exit(0);
+	}
+
+	// TODO:
+	// You should implement this function so that it returns a Curve
+	// (e.g., a vector< CurvePoint >).  The variable "steps" tells you
+	// the number of points to generate on each piece of the spline.
+	// At least, that's how the sample solution is implemented and how
+	// the SWP files are written.  But you are free to interpret this
+	// variable however you want, so long as you can control the
+	// "resolution" of the discretized spline curve with it.
+
+	// Make sure that this function computes all the appropriate
+	// Vector3fs for each CurvePoint: V,T,N,B.
+	// [NBT] should be unit and orthogonal.
+
+	// Also note that you may assume that all Bezier curves that you
+	// receive have G1 continuity.  Otherwise, the TNB will not be
+	// be defined at points where this does not hold.
+
+	int num_segments = (P.size() - 1) / 3;
+
+	Curve R;
+
+	Matrix4f Bernstein = Matrix4f(
+		1, -3, 3, -1,
+		0, 3, -6, 3,
+		0, 0, 3, -3,
+		0, 0, 0, 1
+	);
+
+	Vector3f B = Vector3f(0, 0, 1);
+
+	for (int i = 0; i < num_segments; i++) {
+		// Vector3f Point1 = P[3*i];
+		// Vector3f Point2 = P[3*i +1];
+		// Vector3f Point3 = P[3*i +2];
+		// Vector3f Point4 = P[3*i +3];
+
+		Matrix4f Points(
+			P[3 * i][0], P[3 * i + 1][0], P[3 * i + 2][0], P[3 * i + 3][0],
+			P[3 * i][1], P[3 * i + 1][1], P[3 * i + 2][1], P[3 * i + 3][1],
+			P[3 * i][2], P[3 * i + 1][2], P[3 * i + 2][2], P[3 * i + 3][2],
+			0, 0, 0, 0
+		);
+		float t = 0;
+		int time = 0;
+		while(t <= 1 && time < speed.size()) {
+			Matrix4f temp = Points*Bernstein;
+
+			Vector4f cononical = Vector4f(1, t, t*t, t*t*t);
+			Vector4f V_extra0 = temp*cononical;
+			Vector3f V(V_extra0[0], V_extra0[1], V_extra0[2]);
+
+			Vector4f derivative = Vector4f(0, 1, 2 * t, 3 * t*t);
+			Vector4f T_extra0 = temp*derivative;
+			Vector3f T(T_extra0[0], T_extra0[1], T_extra0[2]);
+			T = T.normalized();
+
+			Vector3f N;
+			N = Vector3f::cross(B, T).normalized();
+			// B = Vector3f::cross(T, N).normalized();
+			CurvePoint CP = CurvePoint();
+
+			if (approx(B, T)) {
+				B = Vector3f(0, 0, 1.00001);
+			}
+			B = Vector3f::cross(T, N).normalized();
+
+			CP.V = V;
+			CP.T = T;
+			CP.B = B;
+			CP.N = N;
+
+			R.push_back(CP);
+
+			t += speed[time];
+			time++;
+		}
+
+	}
+
+	cerr << "\t>>> evalBezier has been called with the following input:" << endl;
+
+	cerr << "\t>>> Control points (type vector< Vector3f >): " << endl;
+	for (int i = 0; i < (int)P.size(); ++i)
+	{
+		cerr << "\t>>> " << P[i] << endl;
+	}
+
+	// Right now this will just return this empty curve.
+	return R;
+}
+
 Curve evalBspline(const vector< Vector3f >& P, unsigned steps)
 {
 	// Check
